@@ -117,6 +117,11 @@ private:
     void do_write();
 
     /**
+     * @brief do_read
+     */
+    void do_read();
+
+    /**
      * @brief check_dealine
      */
     void check_dealine();

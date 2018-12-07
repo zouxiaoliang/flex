@@ -128,6 +128,7 @@ void Transport::handle_connect(const boost::system::error_code &err)
     {
         boost::system::error_code set_option_err;
         boost::asio::ip::tcp::no_delay no_delay(true);
+
         m_socket.set_option(no_delay, set_option_err);
         if (!set_option_err)
         {
@@ -138,11 +139,7 @@ void Transport::handle_connect(const boost::system::error_code &err)
             }
 
             // 接收数据
-            boost::asio::async_read(
-                        m_socket,
-                        boost::asio::buffer(m_read_data, m_read_data_length),
-                        boost::bind(&Transport::handle_read, this, _1, _2)
-                        );
+            do_read();
         }
     }
     else
@@ -168,11 +165,7 @@ void Transport::handle_read(const boost::system::error_code &err, size_t length)
         }
 
         // 接收数据
-        boost::asio::async_read(
-                    m_socket,
-                    boost::asio::buffer(m_read_data, m_read_data_length),
-                    boost::bind(&Transport::handle_read, this, _1, _2)
-                    );
+        do_read();
     }
     else
     {
@@ -235,5 +228,15 @@ void Transport::do_write()
                 m_socket,
                 boost::asio::buffer(m_write_data.data(), m_write_data.size()),
                 boost::bind(&Transport::handle_write, this, _1, _2));
+}
+
+void Transport::do_read()
+{
+    boost::asio::async_read(
+                m_socket,
+                boost::asio::buffer(m_read_data, m_read_data_length),
+                boost::asio::transfer_at_least(1),
+                boost::bind(&Transport::handle_read, this, _1, _2)
+                );
 }
 
