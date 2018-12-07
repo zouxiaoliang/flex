@@ -46,8 +46,8 @@ void ClientFactory::connection_lost(boost::shared_ptr<Transport> connector, cons
 {
     if (err)
     {
-        std::cout << "connection lost, retry connect to server" << std::endl;
         boost::thread::sleep(boost::get_system_time() + boost::posix_time::seconds(5));
+        std::cout << "connection lost, retry connect to server" << std::endl;
         connector->connect();
     }
 }
@@ -56,8 +56,8 @@ void ClientFactory::connection_failed(boost::shared_ptr<Transport> connector, co
 {
     if (err)
     {
-        std::cout << "connection failed, retry connect to server" << std::endl;
         boost::thread::sleep(boost::get_system_time() + boost::posix_time::seconds(5));
+        std::cout << "connection failed, retry connect to server" << std::endl;
         connector->connect();
     }
 }

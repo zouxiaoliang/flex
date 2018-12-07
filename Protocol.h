@@ -28,7 +28,7 @@ public:
      * @brief write 发送数据到对对端
      * @param message 消息
      */
-    void write(const std::string &message);
+    virtual void write(const std::string &message);
 
     /**
      * @brief close 关闭连接
@@ -40,6 +40,7 @@ public:
      * @return
      */
     int transport_status();
+
 protected:
     /**
      * @brief data_received 数据接收回调
@@ -57,7 +58,6 @@ protected:
      */
     virtual void on_disconnected();
 
-private:
     /**
      * @brief on_data_received 对收到的消息进行处理
      * @param data
@@ -70,8 +70,12 @@ private:
      */
     virtual void on_write_error(const std::string &data);
 
+    /**
+     * @brief print
+     */
     void print();
-private:
+
+protected:
     boost::asio::io_context &m_ioc;
     boost::shared_ptr<Transport> m_transport;
 
