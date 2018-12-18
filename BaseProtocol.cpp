@@ -16,8 +16,9 @@ CBaseProtocol::CBaseProtocol(boost::asio::io_context &ioc, boost::shared_ptr<CBa
 {
     if (m_transport)
     {
-        m_transport->set_on_connected(boost::bind(&CBaseProtocol::on_connected, this));
-        m_transport->set_on_disconnected(boost::bind(&CBaseProtocol::on_disconnected, this));
+        m_transport->register_callback<boost::function<void()>>("on_connected", boost::bind(&CBaseProtocol::on_connected, this));
+        m_transport->register_callback<boost::function<void()>>("on_disconnected", boost::bind(&CBaseProtocol::on_disconnected, this));
+        m_transport->register_callback<boost::function<void(const std::string &)>>("on_data_received", boost::bind(&CBaseProtocol::on_data_received, this, _1));
         m_transport->set_on_data_received(boost::bind(&CBaseProtocol::on_data_received, this, _1));
     }
 }

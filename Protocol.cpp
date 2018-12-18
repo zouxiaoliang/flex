@@ -11,16 +11,9 @@
 #include <iostream>
 
 Protocol::Protocol(boost::asio::io_context &ioc, boost::shared_ptr<Transport> transport):
-    m_ioc(ioc),
-    m_transport(transport),
+    CBaseProtocol(ioc, transport),
     m_timer(ioc)
 {
-    if (m_transport)
-    {
-        m_transport->set_on_connected(boost::bind(&Protocol::on_connected, this));
-        m_transport->set_on_disconnected(boost::bind(&Protocol::on_disconnected, this));
-        m_transport->set_on_data_received(boost::bind(&Protocol::on_data_received, this, _1));
-    }
     m_error_count = 0;
     m_recv_count = 0;
     m_timer.expires_from_now(boost::posix_time::seconds(5));

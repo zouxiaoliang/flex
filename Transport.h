@@ -8,10 +8,27 @@
 
 #include <memory>
 
-class Protocol;
+#include "KeyVariant.h"
+
+class CBaseProtocol;
 
 class Transport : public boost::enable_shared_from_this<Transport>
 {
+public:
+    /**
+     * @brief CallBack 可变类型回调函数
+     */
+    typedef boost::function<void ()> on_connected;
+    typedef boost::function<void ()> on_disconnected;
+    typedef boost::function<void(const std::string &)> on_data_recevied;
+    typedef boost::function<void(boost::shared_ptr<Transport>, boost::system::error_code)> on_connection_lost;
+    typedef boost::function<void(boost::shared_ptr<Transport>, boost::system::error_code)> on_connection_failed;
+
+    typedef KeyVariant<
+        boost::function<void()>,
+        boost::function<void(const std::string &)>,
+        boost::function<void(boost::shared_ptr<Transport>, boost::system::error_code)>
+    > TVariantCallBack;
 public:
     enum {
         EN_READY,
@@ -24,8 +41,8 @@ public:
     Transport(boost::asio::io_context& ioc, time_t timeout, size_t block_size);
     ~Transport();
 
-    void set_protocol(boost::shared_ptr<Protocol> protocol);
-    boost::shared_ptr<Protocol> protocol();
+    void set_protocol(boost::shared_ptr<CBaseProtocol> protocol);
+    boost::shared_ptr<CBaseProtocol> protocol();
 
     /**
      * @brief start 启动通讯管道
@@ -53,6 +70,37 @@ public:
      * @brief write 数据写入接口
      */
     void write(const std::string &data, boost::function<void(const std::string &)> handle_error);
+
+    /**
+     * @brief register_callback 回调函数注册
+     * @param name
+     * @param callback
+     * @return
+     */
+    template<class T>
+    bool register_callback(const char *name, T callback)
+    {
+        if (nullptr == name)
+        {
+            return false;
+        }
+        std::cout << "register callback name: " << name << std::endl;
+        m_callbacks.set<T>(name, callback);
+        return true;
+    }
+
+    /**
+     * @brief unregister_callback
+     * @param name
+     */
+    void unregister_callback(const char *name)
+    {
+        if (nullptr == name)
+        {
+            return;
+        }
+        m_callbacks.remove(name);
+    }
 
     /**
      * @brief set_on_connected 连接成功数据回调接口
@@ -151,7 +199,11 @@ private:
     boost::function<void(boost::shared_ptr<Transport>, boost::system::error_code)> m_on_connection_failed;
     boost::function<void(boost::shared_ptr<Transport>, boost::system::error_code)> m_on_connection_lost;
 
-    boost::shared_ptr<Protocol> m_protocol;
+    boost::shared_ptr<CBaseProtocol> m_protocol;
+
+    TVariantCallBack m_callbacks;
 };
+
+typedef Transport CBaseTransport;
 
 #endif // SESSION_H

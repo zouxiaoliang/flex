@@ -27,12 +27,12 @@ Transport::~Transport()
     }
 }
 
-void Transport::set_protocol(boost::shared_ptr<Protocol> protocol)
+void Transport::set_protocol(boost::shared_ptr<CBaseProtocol> protocol)
 {
     m_protocol = protocol;
 }
 
-boost::shared_ptr<Protocol> Transport::protocol()
+boost::shared_ptr<CBaseProtocol> Transport::protocol()
 {
     return m_protocol;
 }
@@ -102,26 +102,6 @@ void Transport::set_on_data_received(boost::function<void (const std::string &)>
     m_on_data_recevied = on_data_recevied;
 }
 
-void Transport::set_on_connected(boost::function<void ()> on_connected)
-{
-    m_on_connected = on_connected;
-}
-
-void Transport::set_on_disconnected(boost::function<void ()> on_disconnected)
-{
-    m_on_disconnected = on_disconnected;
-}
-
-void Transport::set_on_connection_failed(boost::function<void(boost::shared_ptr<Transport>, boost::system::error_code)> on_connection_failed)
-{
-    m_on_connection_failed = on_connection_failed;
-}
-
-void Transport::set_on_connection_lost(boost::function<void (boost::shared_ptr<Transport>, boost::system::error_code)> on_connection_lost)
-{
-    m_on_connection_lost = on_connection_lost;
-}
-
 void Transport::handle_connect(const boost::system::error_code &err)
 {
     if (!err)
@@ -133,11 +113,10 @@ void Transport::handle_connect(const boost::system::error_code &err)
         if (!set_option_err)
         {
             m_transport_status = EN_OK;
-            if (m_on_connected)
+            if (m_callbacks.has<on_connected>("on_connected"))
             {
-                m_on_connected();
+                m_callbacks.get<on_connected>("on_connected")();
             }
-
             // 接收数据
             do_read();
         }
@@ -145,9 +124,9 @@ void Transport::handle_connect(const boost::system::error_code &err)
     else
     {
         std::cout << "handle_connect error, messsage: " << err.message() << std::endl;
-        if (m_on_connection_failed)
+        if (m_callbacks.has<on_connection_failed>("on_connection_failed"))
         {
-            m_on_connection_failed(shared_from_this(), err);
+            m_callbacks.get<on_connection_failed>("on_connection_failed")(shared_from_this(), err);
         }
     }
 }
@@ -170,9 +149,10 @@ void Transport::handle_read(const boost::system::error_code &err, size_t length)
     else
     {
         std::cout << "handle_read error, messsage: " << err.message() << std::endl;
-        if (m_on_connection_lost)
+        handle_close();
+        if (m_callbacks.has<on_connection_lost>("on_connection_lost"))
         {
-            m_on_connection_lost(shared_from_this(), err);
+            m_callbacks.get<on_connection_lost>("on_connection_lost")(shared_from_this(), err);
         }
     }
 }
@@ -204,9 +184,10 @@ void Transport::handle_write(const boost::system::error_code &err, size_t length
     {
         std::cout << "handle_write error, messsage: " << err.message() << std::endl;
         handle_close();
-        if (m_on_connection_lost)
+
+        if (m_callbacks.has<on_connection_lost>("on_connection_lost"))
         {
-            m_on_connection_lost(shared_from_this(), err);
+            m_callbacks.get<on_connection_lost>("on_connection_lost")(shared_from_this(), err);
         }
     }
 }
@@ -215,11 +196,11 @@ void Transport::handle_close()
 {
     m_transport_status = EN_CLOSE;
     m_socket.close();
-    if (m_on_disconnected)
-    {
-        m_on_disconnected();
-    }
     std::cout << "close_socket" << std::endl;
+    if (m_callbacks.has<on_disconnected>("on_disconnected"))
+    {
+        m_callbacks.get<on_disconnected>("on_disconnected")();
+    }
 }
 
 void Transport::do_write()
@@ -239,4 +220,3 @@ void Transport::do_read()
                 boost::bind(&Transport::handle_read, this, _1, _2)
                 );
 }
-

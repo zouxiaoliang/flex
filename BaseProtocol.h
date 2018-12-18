@@ -15,7 +15,7 @@ class CBaseProtocol
 public:
     CBaseProtocol(boost::asio::io_context &ioc, boost::shared_ptr<CBaseTransport> transport);
 
-    ~CBaseProtocol();
+    virtual ~CBaseProtocol();
 
 public:
     /**

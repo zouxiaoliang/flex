@@ -18,7 +18,7 @@ int main()
     boost::asio::io_context ioc;
 
     auto client_factory = boost::make_shared<ClientFactory>(ioc);
-    auto p = client_factory->connect_tcp("10.11.1.101", 8000, 10, 1024);
+    auto p = client_factory->connect_tcp<Protocol>("10.11.1.161", 8000, 10, 1024);
 
     const char *fmt = "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
                       "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"

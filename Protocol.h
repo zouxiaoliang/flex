@@ -4,12 +4,12 @@
 #include <boost/asio.hpp>
 #include <list>
 
-class Transport;
+#include "BaseProtocol.h"
 
 /**
  * @brief The Protocol class 组装业务数据，并将数据发送到对端
  */
-class Protocol
+class Protocol : public CBaseProtocol
 {
 private:
     struct Head
@@ -76,8 +76,6 @@ protected:
     void print();
 
 protected:
-    boost::asio::io_context &m_ioc;
-    boost::shared_ptr<Transport> m_transport;
 
     std::string m_buffer;
 
