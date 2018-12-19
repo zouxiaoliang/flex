@@ -25,7 +25,7 @@ boost::shared_ptr<CBaseProtocol> CBaseFactory::build_protocol(
     auto transport = boost::make_shared<Transport>(this->m_ioc, timeout, block_size);
     auto protocol = boost::make_shared<ProtocolType>(this->m_ioc, transport);
 
-    this->__build_protocolrotocol(transport, protocol);
+    this->__build_protocol(transport, protocol);
     transport->connect(endpoints);
 
     return protocol;

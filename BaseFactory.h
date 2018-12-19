@@ -44,12 +44,13 @@ public:
      */
     template<class ProtocolType>
     boost::shared_ptr<CBaseProtocol> build_protocol(const boost::asio::ip::tcp::resolver::results_type &endpoints, time_t timeout, size_t block_size);
+protected:
 
     /**
      * @brief __build_protocolrotocol 自定义构建方法
      * @param connector
      */
-    virtual void __build_protocolrotocol(boost::shared_ptr<Transport> connector, boost::shared_ptr<CBaseProtocol> protocol){}
+    virtual void __build_protocol(boost::shared_ptr<Transport> connector, boost::shared_ptr<CBaseProtocol> protocol){}
 protected:
 
     boost::asio::io_context &m_ioc;

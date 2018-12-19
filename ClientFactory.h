@@ -14,16 +14,19 @@
 class ClientFactory : public CBaseFactory
 {
 public:
-    ClientFactory(boost::asio::io_context &ioc):CBaseFactory(ioc){}
-    virtual ~ClientFactory(){}
-public:
+
+    ClientFactory(boost::asio::io_context &ioc);
+
+    virtual ~ClientFactory();
+protected:
 
     /**
      * @brief __build_protocolrotocol 自定义构建方法，注册重连回调函数
      * @param transport
      * @param protocol
      */
-    virtual void __build_protocolrotocol(boost::shared_ptr<Transport> transport, boost::shared_ptr<CBaseProtocol> protocol);
+    virtual void __build_protocol(boost::shared_ptr<Transport> transport, boost::shared_ptr<CBaseProtocol> protocol);
+public:
 
     /**
      * @brief connection_lost 当连接在半途中出现问题的时候对连接进行处理

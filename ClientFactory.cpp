@@ -1,8 +1,18 @@
 #include "ClientFactory.h"
 
-void ClientFactory::__build_protocolrotocol(boost::shared_ptr<Transport> connector, boost::shared_ptr<CBaseProtocol> protocol)
+ClientFactory::ClientFactory(boost::asio::io_context &ioc):
+    CBaseFactory(ioc)
 {
-    std::cout << "ClientFactory::__build_protocolrotocol" << std::endl;
+
+}
+
+ClientFactory::~ClientFactory()
+{
+
+}
+
+void ClientFactory::__build_protocol(boost::shared_ptr<Transport> connector, boost::shared_ptr<CBaseProtocol> protocol)
+{
     connector->register_callback<Transport::on_connection_lost>("on_connection_lost", boost::bind(&ClientFactory::connection_lost, this, _1, _2));
     connector->register_callback<Transport::on_connection_failed>("on_connection_failed", boost::bind(&ClientFactory::connection_failed, this, _1, _2));
 }
