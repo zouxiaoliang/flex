@@ -50,9 +50,10 @@ void CAcceptor::connection_made(const boost::shared_ptr<boost::asio::ip::tcp::so
 {
     if(!err)
     {
-        boost::shared_ptr<CBaseProtocol> session = m_factory->build_accept<Protocol>(socket, 10, 1024);
-        session->write("hello world");
-        std::cout << "==>new client" << std::endl;
+        // boost::system::error_code endpoint_error;
+        // socket->local_endpoint(endpoint_error);
+        // socket->remote_endpoint(endpoint_error);
+        std::cout << "eccept new client" << std::endl;
     }
     else
     {
@@ -62,5 +63,5 @@ void CAcceptor::connection_made(const boost::shared_ptr<boost::asio::ip::tcp::so
 
 void CAcceptorV2::connection_made(boost::shared_ptr<CBaseProtocol> session)
 {
-    std::cout << "eccept new client: " << std::endl;
+    std::cout << "eccept new client" << std::endl;
 }
