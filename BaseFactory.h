@@ -35,6 +35,9 @@ public:
     template<class ProtocolType>
     boost::shared_ptr<CBaseProtocol> connect_tcp(const std::string &ip, short port, time_t timeout, size_t block_size);
 
+    template<class ProtocolType>
+    boost::shared_ptr<CBaseProtocol> build_accept(const boost::shared_ptr<boost::asio::ip::tcp::socket> socket, time_t timeout ,size_t block_size);
+
     /**
      * @brief build_protocal 创建协议对象
      * @param endpoints 对端信息
@@ -43,7 +46,8 @@ public:
      * @return 协议处理对象
      */
     template<class ProtocolType>
-    boost::shared_ptr<CBaseProtocol> build_protocol(const boost::asio::ip::tcp::resolver::results_type &endpoints, time_t timeout, size_t block_size);
+    boost::shared_ptr<CBaseProtocol> build_protocol(const boost::asio::ip::tcp::resolver::results_type &endpoints,
+                                                    time_t timeout, size_t block_size);
 protected:
 
     /**

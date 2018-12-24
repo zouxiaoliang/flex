@@ -8,6 +8,7 @@
 #include "Protocol.h"
 #include "Transport.h"
 #include "ClientFactory.h"
+#include "BaseAcceptor.h"
 
 using namespace std;
 
@@ -17,7 +18,16 @@ int main()
 
     boost::asio::io_context ioc;
 
+    short port = 8000;
+    boost::asio::ip::address address = boost::asio::ip::make_address("0.0.0.0");
     auto client_factory = boost::make_shared<ClientFactory>(ioc);
+
+    // service
+    CAcceptor accept(ioc, client_factory);
+    accept.listen(boost::asio::ip::tcp::endpoint(address, port));
+
+    ioc.run();
+    // client
     auto p = client_factory->connect_tcp<Protocol>("10.11.1.161", 8000, 10, 1024);
 
     const char *fmt = "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"

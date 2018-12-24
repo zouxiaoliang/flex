@@ -22,7 +22,9 @@ template<class ProtocolType>
 boost::shared_ptr<CBaseProtocol> CBaseFactory::build_protocol(
         const boost::asio::ip::tcp::resolver::results_type &endpoints, time_t timeout ,size_t block_size)
 {
-    auto transport = boost::make_shared<Transport>(this->m_ioc, timeout, block_size);
+    auto transport = boost::make_shared<Transport>(this->m_ioc,
+                                                   boost::make_shared<boost::asio::ip::tcp::socket>(this->m_ioc),
+                                                   timeout, block_size);
     auto protocol = boost::make_shared<ProtocolType>(this->m_ioc, transport);
 
     this->__build_protocol(transport, protocol);
@@ -30,3 +32,16 @@ boost::shared_ptr<CBaseProtocol> CBaseFactory::build_protocol(
 
     return protocol;
 }
+
+template<class ProtocolType>
+boost::shared_ptr<CBaseProtocol> CBaseFactory::build_accept(const boost::shared_ptr<boost::asio::ip::tcp::socket> socket, time_t timeout ,size_t block_size)
+{
+    auto transport = boost::make_shared<Transport>(this->m_ioc, socket, timeout, block_size);
+    auto protocol = boost::make_shared<ProtocolType>(this->m_ioc, transport);
+
+    this->__build_protocol(transport, protocol);
+    transport->connection_made();
+
+    return protocol;
+}
+

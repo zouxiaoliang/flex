@@ -4,10 +4,11 @@
 
 #include <boost/bind.hpp>
 #include <boost/thread.hpp>
+#include <boost/make_shared.hpp>
 
-Transport::Transport(boost::asio::io_context &ioc, time_t timeout, size_t block_size) :
+Transport::Transport(boost::asio::io_context &ioc, boost::shared_ptr<boost::asio::ip::tcp::socket> socket, time_t timeout, size_t block_size) :
     m_strand(ioc),
-    m_socket(ioc),
+    m_socket(socket),
     m_block_size(block_size),
     m_timeout(timeout),
     m_read_data(new char[block_size]),
@@ -57,8 +58,8 @@ void Transport::connect()
     m_transport_status = EN_READY;
 
     boost::asio::async_connect(
-                m_socket, m_endpoints,
-                boost::bind(&Transport::handle_connect, this, boost::asio::placeholders::error)
+                *m_socket, m_endpoints,
+                boost::bind(&Transport::handle_connect, shared_from_this(), boost::asio::placeholders::error)
                 );
     m_transport_status = EN_CONNECTING;
 }
@@ -71,6 +72,17 @@ void Transport::disconnect()
 int32_t Transport::status()
 {
     return m_transport_status;
+}
+
+void Transport::connection_made()
+{
+    boost::system::error_code set_option_err;
+    boost::asio::ip::tcp::no_delay no_delay(true);
+
+    m_socket->set_option(no_delay, set_option_err);
+    m_transport_status = EN_OK;
+    // 接收数据
+    do_read();
 }
 
 void Transport::write(const std::string &data, boost::function<void(const std::string &)> handle_error)
@@ -109,7 +121,7 @@ void Transport::handle_connect(const boost::system::error_code &err)
         boost::system::error_code set_option_err;
         boost::asio::ip::tcp::no_delay no_delay(true);
 
-        m_socket.set_option(no_delay, set_option_err);
+        m_socket->set_option(no_delay, set_option_err);
         if (!set_option_err)
         {
             m_transport_status = EN_OK;
@@ -195,7 +207,7 @@ void Transport::handle_write(const boost::system::error_code &err, size_t length
 void Transport::handle_close()
 {
     m_transport_status = EN_CLOSE;
-    m_socket.close();
+    m_socket->close();
     std::cout << "close_socket" << std::endl;
     if (m_callbacks.has<on_disconnected>("on_disconnected"))
     {
@@ -206,17 +218,17 @@ void Transport::handle_close()
 void Transport::do_write()
 {
     boost::asio::async_write(
-                m_socket,
+                *m_socket,
                 boost::asio::buffer(m_write_data.data(), m_write_data.size()),
-                boost::bind(&Transport::handle_write, this, _1, _2));
+                boost::bind(&Transport::handle_write, shared_from_this(), _1, _2));
 }
 
 void Transport::do_read()
 {
     boost::asio::async_read(
-                m_socket,
+                *m_socket,
                 boost::asio::buffer(m_read_data, m_read_data_length),
                 boost::asio::transfer_at_least(1),
-                boost::bind(&Transport::handle_read, this, _1, _2)
+                boost::bind(&Transport::handle_read, shared_from_this(), _1, _2)
                 );
 }

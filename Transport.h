@@ -21,13 +21,13 @@ public:
     typedef boost::function<void ()> on_connected;
     typedef boost::function<void ()> on_disconnected;
     typedef boost::function<void(const std::string &)> on_data_recevied;
-    typedef boost::function<void(boost::shared_ptr<Transport>, boost::system::error_code)> on_connection_lost;
-    typedef boost::function<void(boost::shared_ptr<Transport>, boost::system::error_code)> on_connection_failed;
+    typedef boost::function<void(boost::shared_ptr<Transport>, const boost::system::error_code&)> on_connection_lost;
+    typedef boost::function<void(boost::shared_ptr<Transport>, const boost::system::error_code&)> on_connection_failed;
 
     typedef KeyVariant<
         boost::function<void()>,
         boost::function<void(const std::string &)>,
-        boost::function<void(boost::shared_ptr<Transport>, boost::system::error_code)>
+        boost::function<void(boost::shared_ptr<Transport>, const boost::system::error_code&)>
     > TVariantCallBack;
 public:
     enum {
@@ -38,11 +38,13 @@ public:
     };
 
 public:
-    Transport(boost::asio::io_context& ioc, time_t timeout, size_t block_size);
+    Transport(boost::asio::io_context& ioc, boost::shared_ptr<boost::asio::ip::tcp::socket> socket, time_t timeout, size_t block_size);
     ~Transport();
 
     void set_protocol(boost::shared_ptr<CBaseProtocol> protocol);
     boost::shared_ptr<CBaseProtocol> protocol();
+
+    void status(int32_t status){m_transport_status = status;}
 
     /**
      * @brief start 启动通讯管道
@@ -65,6 +67,11 @@ public:
      * @return
      */
     int32_t status();
+
+    /**
+     * @brief connection_made
+     */
+    void connection_made();
 
     /**
      * @brief write 数据写入接口
@@ -103,37 +110,12 @@ public:
     }
 
     /**
-     * @brief set_on_connected 连接成功数据回调接口
-     * @param on_connected 回调接口
-     */
-    void set_on_connected(boost::function<void()> on_connected);
-
-    /**
-     * @brief set_on_disconnected
-     * @param on_disconnected
-     */
-    void set_on_disconnected(boost::function<void()> on_disconnected);
-
-    /**
      * @brief set_data_received 这是消息处理毁掉函数
      * @param on_data_recevied 会掉接口
      */
     void set_on_data_received(boost::function<void(const std::string &data)> on_data_recevied);
-
-    /**
-     * @brief set_on_connection_failed
-     * @param on_connection_failed
-     */
-    void set_on_connection_failed(
-            boost::function<void(boost::shared_ptr<Transport>, boost::system::error_code)> on_connection_failed);
-
-    /**
-     * @brief set_on_connection_lost
-     * @param on_connection_lost
-     */
-    void set_on_connection_lost(
-            boost::function<void(boost::shared_ptr<Transport>, boost::system::error_code)> on_connection_lost);
 private:
+
     /**
      * @brief handle_connect 连接处理时间
      * @param err 错误信息
@@ -176,7 +158,7 @@ private:
 
 private:
     boost::asio::io_context::strand m_strand;
-    boost::asio::ip::tcp::socket m_socket;
+    boost::shared_ptr<boost::asio::ip::tcp::socket> m_socket;
     boost::asio::ip::tcp::resolver::results_type m_endpoints;
 
     size_t m_block_size;
@@ -194,10 +176,6 @@ private:
     boost::atomic_int32_t m_transport_status;
 
     boost::function<void(const std::string &data)> m_on_data_recevied;
-    boost::function<void(void)> m_on_connected;
-    boost::function<void(void)> m_on_disconnected;
-    boost::function<void(boost::shared_ptr<Transport>, boost::system::error_code)> m_on_connection_failed;
-    boost::function<void(boost::shared_ptr<Transport>, boost::system::error_code)> m_on_connection_lost;
 
     boost::shared_ptr<CBaseProtocol> m_protocol;
 
