@@ -7,7 +7,7 @@ set(CMAKE_CXX_STANDARD 11)
 INCLUDE_DIRECTORIES(/usr/local/include)
 LINK_LIBRARIES(/usr/local/lib)
 
-find_package(Boost 1.67 COMPONENTS system filesystem regex thread REQUIRED)
+find_package(Boost 1.67 COMPONENTS system filesystem regex thread)
 
 add_executable(${PROJECT_NAME}-client "main.cpp" "Transport.cpp" "Protocol.cpp" "BaseProtocol.cpp" "BaseFactory.cpp" "ClientFactory.cpp" "BaseAcceptor.cpp")
 target_link_libraries(${PROJECT_NAME}-client ${Boost_LIBRARIES} pthread)
