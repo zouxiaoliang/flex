@@ -15,3 +15,7 @@ target_link_libraries(${PROJECT_NAME}-client ${Boost_LIBRARIES} pthread rt)
 add_library(${PROJECT_NAME}-shared SHARED "Transport.cpp" "Protocol.cpp" "BaseProtocol.cpp" "BaseFactory.cpp" "ClientFactory.cpp" "BaseAcceptor.cpp")
 set_target_properties(${PROJECT_NAME}-shared PROPERTIES OUTPUT_NAME ${PROJECT_NAME})
 target_link_libraries(${PROJECT_NAME}-shared ${Boost_LIBRARIES} pthread rt)
+
+SET(LIBRARY_OUTPUT_PATH lib)
+install(TARGETS ${PROJECT_NAME}-shared LIBRARY DESTINATION lib)
+install(TARGETS ${PROJECT_NAME}-client RUNTIME DESTINATION .)
