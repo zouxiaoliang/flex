@@ -114,6 +114,12 @@ public:
      * @param on_data_recevied 会掉接口
      */
     void set_on_data_received(boost::function<void(const std::string &data)> on_data_recevied);
+
+    /**
+     * @brief endpoints 获取连接地址信息
+     * @return
+     */
+    boost::asio::ip::tcp::resolver::results_type endpoints();
 private:
 
     /**
