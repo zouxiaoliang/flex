@@ -140,6 +140,7 @@ void Transport::handle_connect(const boost::system::error_code &err)
     }
     else
     {
+        m_transport_status = EN_CLOSE;
         std::cout << "handle_connect error, messsage: " << err.message() << std::endl;
         if (m_callbacks.has<on_connection_failed>("on_connection_failed"))
         {
