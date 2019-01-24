@@ -114,9 +114,9 @@ void Transport::set_on_data_received(boost::function<void (const std::string &)>
     m_on_data_recevied = on_data_recevied;
 }
 
-boost::asio::ip::tcp::resolver::results_type Transport::endpoints()
+boost::asio::ip::tcp::endpoint Transport::endpoint(int32_t type)
 {
-    return m_endpoints;
+    return EN_LOCAL_ENDPOINT == type ? m_socket->local_endpoint() : m_socket->remote_endpoint();
 }
 
 void Transport::handle_connect(const boost::system::error_code &err)

@@ -37,6 +37,12 @@ public:
         EN_CLOSE
     };
 
+    enum
+    {
+        EN_LOCAL_ENDPOINT,
+        EN_REMOTE_ENDPOINT
+    };
+
 public:
     Transport(boost::asio::io_context& ioc, boost::shared_ptr<boost::asio::ip::tcp::socket> socket, time_t timeout, size_t block_size);
     ~Transport();
@@ -116,10 +122,10 @@ public:
     void set_on_data_received(boost::function<void(const std::string &data)> on_data_recevied);
 
     /**
-     * @brief endpoints 获取连接地址信息
+     * @brief endpoint 获取连接地址信息
      * @return
      */
-    boost::asio::ip::tcp::resolver::results_type endpoints();
+    boost::asio::ip::tcp::endpoint endpoint(int32_t type = EN_LOCAL_ENDPOINT);
 private:
 
     /**
