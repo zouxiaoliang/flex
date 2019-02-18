@@ -9,6 +9,7 @@
 #include <memory>
 
 #include "KeyVariant.h"
+#include "sgi_plus.h"
 
 class CBaseProtocol;
 
@@ -181,7 +182,7 @@ private:
 
     std::allocator<std::string> m_allocator;
 
-    std::list<std::string*> m_messages;
+    std::SGIList<std::string*> m_messages;
 
     boost::atomic_int32_t m_transport_status;
 
