@@ -13,7 +13,6 @@ Transport::Transport(boost::asio::io_context &ioc, boost::shared_ptr<boost::asio
     m_timeout(timeout),
     m_read_data(new char[block_size]),
     m_read_data_length(block_size),
-    m_write_data(),
     m_messages(),
     m_transport_status(EN_CLOSE)
 {
@@ -47,7 +46,6 @@ void Transport::connect(const boost::asio::ip::tcp::resolver::results_type &endp
 
 void Transport::connect()
 {
-    m_write_data.clear();
     for (auto v: m_messages)
     {
         m_allocator.destroy(v);
@@ -87,12 +85,13 @@ void Transport::connection_made()
 
 void Transport::write(const std::string &data, boost::function<void(const std::string &)> handle_error)
 {
-    boost::asio::post(m_strand, [this, data, handle_error]() {
+    boost::asio::post(m_strand, [this, data, handle_error]()
+    {
+        bool trigger = !m_messages.empty();
 
-        bool trigger = !m_write_data.empty();
         if (m_messages.size() < 10000 && EN_OK == status())
         {
-            std::string *s = m_allocator.allocate(1);
+            auto s = m_allocator.allocate(1);
             m_allocator.construct(s, data);
 
             m_messages.push_back(s);
@@ -103,7 +102,8 @@ void Transport::write(const std::string &data, boost::function<void(const std::s
                 handle_error(data);
         }
 
-        if (!trigger) {
+        if (!trigger)
+        {
             do_write();
         }
     });
@@ -180,20 +180,24 @@ void Transport::handle_write(const boost::system::error_code &err, size_t length
     {
         // std::cout << "actually sends " << length << " bytes" << std::endl;
 
-        m_write_data = m_write_data.substr(length);
         if (!m_messages.empty())
         {
-            std::string *s = m_messages.front();
+            // std::cout << "buffer size: " << m_messages.front()->size() <<  ", actually sends " << length << " bytes" << std::endl;
+            if (m_messages.front()->size() != length)
+            {
+                std::cout << "== error: " << m_messages.front()->size() <<  " != " << length << std::endl;
+                return ;
+            }
+            auto s = m_messages.front();
             m_messages.pop_front();
-
-            m_write_data.append(*s);
 
             m_allocator.destroy(s);
             m_allocator.deallocate(s, 1);
         }
 
-        if (!m_write_data.empty())
+        if (!m_messages.empty())
         {
+            // std::cout << "pre buffer size: " << m_messages.front()->size() << std::endl;
             do_write();
         }
     }
@@ -224,7 +228,8 @@ void Transport::do_write()
 {
     boost::asio::async_write(
                 *m_socket,
-                boost::asio::buffer(m_write_data.data(), m_write_data.size()),
+                boost::asio::buffer(m_messages.front()->data(), m_messages.front()->size()),
+                boost::asio::transfer_at_least(m_messages.front()->size()),
                 boost::bind(&Transport::handle_write, shared_from_this(), _1, _2));
 }
 

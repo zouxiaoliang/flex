@@ -12,23 +12,22 @@
 
 using namespace std;
 
-int main()
+void start_client(int32_t port, int64_t count, int64_t client_count)
 {
-    cout << "Hello World!" << endl;
-
     boost::asio::io_context ioc;
 
-    short port = 8000;
-    boost::asio::ip::address address = boost::asio::ip::make_address("0.0.0.0");
+    std::string host = "10.11.1.147";
+
     auto client_factory = boost::make_shared<ClientFactory>(ioc);
 
-    // service
-    CAcceptor accept(ioc, client_factory);
-    accept.listen(boost::asio::ip::tcp::endpoint(address, port));
-
-    ioc.run();
-    // client
-    auto p = client_factory->connect_tcp<Protocol>("10.11.1.161", 8000, 10, 1024);
+    // clients
+    std::vector<boost::shared_ptr<CBaseProtocol>> clients;
+    for (int var = 0; var < client_count; ++ var)
+    {
+        auto client_instance = client_factory->connect_tcp<Protocol>(host.c_str(), port, 10, 1024);
+        if (client_instance)
+            clients.push_back(client_instance);
+    }
 
     const char *fmt = "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
                       "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
@@ -62,28 +61,71 @@ int main()
 
     char buffer[2048] = {};
 
-    std::thread t([&ioc]() {ioc.run();});
+    std::thread thr_ioc([&ioc]() {ioc.run();});
+    std::thread thr_writer([&]() {
+        for (uint64_t var = 0; true; )
+        {
+            for (auto p: clients)
+            {
+                if (Transport::EN_OK != p->transport_status())
+                {
+                    ::sleep(1);
+                    continue;
+                }
 
-    for (uint64_t var = 0; true; )
+                std::sprintf(buffer, fmt, var);
+                p->write(buffer);
+
+            }
+            if ((var % 8000) == 0)
+            {
+                ::sleep(1);
+                std::cout << "send count: " << var << " * " << client_count << std::endl;
+            }
+            ++ var;
+        }
+    });
+
+    // wait the thread stopped
+    thr_writer.join();
+    thr_ioc.join();
+
+    // close clients
+    for (auto p: clients)
     {
-        if (Transport::EN_OK != p->transport_status())
-        {
-            ::sleep(1);
-            continue;
-        }
-
-        std::sprintf(buffer, fmt, var);
-        p->write(buffer);
-
-        if ((var % 8000) == 0)
-        {
-            ::sleep(1);
-            std::cout << "send count: " << var << std::endl;
-        }
-        ++ var;
+        p->close();
     }
+}
 
-    p->close();
-    t.join();
+void start_server()
+{
+    boost::asio::io_context ioc;
+
+    short port = 8000;
+    boost::asio::ip::address address = boost::asio::ip::make_address("0.0.0.0");
+    auto client_factory = boost::make_shared<ClientFactory>(ioc);
+
+    // service
+    CAcceptor accept(ioc, client_factory);
+    accept.listen(boost::asio::ip::tcp::endpoint(address, port));
+
+    ioc.run();
+}
+
+int main(int argc, char *argv[])
+{
+    cout << "Hello World!" << endl;
+    if (argc >= 2 && 0 == strcasecmp(argv[1], "server"))
+    {
+        start_server();
+    }
+    else if (argc >= 5 && 0 == strcasecmp(argv[1], "client"))
+    {
+        start_client(::atoi(argv[2]), ::atoi(argv[3]), ::atoi(argv[4]));
+    }
+    else
+    {
+        std::cout <<  argv[0] << " server/client port count client_count" << std::endl;
+    }
     return 0;
 }

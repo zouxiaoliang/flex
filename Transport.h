@@ -173,8 +173,6 @@ private:
     char *m_read_data;
     size_t m_read_data_length;
 
-    std::string m_write_data;
-
     std::allocator<std::string> m_allocator;
 
     std::list<std::string*> m_messages;
