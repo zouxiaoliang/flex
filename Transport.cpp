@@ -95,16 +95,19 @@ void Transport::write(const std::string &data, boost::function<void(const std::s
             m_allocator.construct(s, data);
 
             m_messages.push_back(s);
+
+            // 如果write前队列为空
+            if (!trigger)
+            {
+                do_write();
+            }
         }
         else
         {
             if (handle_error)
+            {
                 handle_error(data);
-        }
-
-        if (!trigger)
-        {
-            do_write();
+            }
         }
     });
 }

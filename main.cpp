@@ -77,7 +77,7 @@ void start_client(int32_t port, int64_t count, int64_t client_count)
                 p->write(buffer);
 
             }
-            if ((var % 8000) == 0)
+            if ((var % count) == 0)
             {
                 ::sleep(1);
                 std::cout << "send count: " << var << " * " << client_count << std::endl;
