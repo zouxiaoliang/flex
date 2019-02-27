@@ -89,6 +89,7 @@ void Transport::write(const std::string &data, boost::function<void(const std::s
     {
         bool trigger = !m_messages.empty();
 
+        // 通讯状态OK且缓存队列未满，将消息加入缓存队列
         if (m_messages.size() < 10000 && EN_OK == status())
         {
             auto s = m_allocator.allocate(1);
@@ -96,7 +97,7 @@ void Transport::write(const std::string &data, boost::function<void(const std::s
 
             m_messages.push_back(s);
 
-            // 如果write前队列为空
+            // 如果push前队列为空，手动调用do_write消费队列数据
             if (!trigger)
             {
                 do_write();
