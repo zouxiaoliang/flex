@@ -1,5 +1,5 @@
-#ifndef CLIENT_H
-#define CLIENT_H
+#ifndef PROTOCOL_H
+#define PROTOCOL_H
 
 #include <boost/asio.hpp>
 #include <list>
@@ -84,4 +84,4 @@ protected:
     boost::asio::deadline_timer m_timer;
 };
 
-#endif // CLIENT_H
+#endif // PROTOCOL_H

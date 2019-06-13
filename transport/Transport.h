@@ -1,5 +1,5 @@
-#ifndef SESSION_H
-#define SESSION_H
+#ifndef TRANSPORT_H
+#define TRANSPORT_H
 
 #include <boost/asio.hpp>
 #include <boost/function.hpp>
@@ -8,8 +8,8 @@
 
 #include <memory>
 
-#include "KeyVariant.h"
-#include "sgi_plus.h"
+#include "utils/KeyVariant.h"
+#include "utils/sgi_plus.h"
 
 class CBaseProtocol;
 
@@ -31,6 +31,9 @@ public:
         boost::function<void(boost::shared_ptr<Transport>, const boost::system::error_code&)>
     > TVariantCallBack;
 public:
+    /**
+     * transport 状态
+     */
     enum {
         EN_READY,
         EN_CONNECTING,
@@ -48,9 +51,22 @@ public:
     Transport(boost::asio::io_context& ioc, boost::shared_ptr<boost::asio::ip::tcp::socket> socket, time_t timeout, size_t block_size);
     ~Transport();
 
+    /**
+     * @brief set_protocol 设置协议处理对象
+     * @param protocol 协议
+     */
     void set_protocol(boost::shared_ptr<CBaseProtocol> protocol);
+
+    /**
+     * @brief protocol 获取协议对象
+     * @return 协议对象指针
+     */
     boost::shared_ptr<CBaseProtocol> protocol();
 
+    /**
+     * @brief status 设置当前transport的状态
+     * @param status
+     */
     void status(int32_t status){m_transport_status = status;}
 
     /**
@@ -195,4 +211,4 @@ private:
 
 typedef Transport CBaseTransport;
 
-#endif // SESSION_H
+#endif // TRANSPORT_H

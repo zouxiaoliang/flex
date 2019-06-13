@@ -5,9 +5,9 @@
 #include <boost/make_shared.hpp>
 #include <boost/thread.hpp>
 
-#include "Protocol.h"
-#include "Transport.h"
-#include "ClientFactory.h"
+#include "protocol/Protocol.h"
+#include "transport/Transport.h"
+#include "factory/ClientFactory.h"
 #include "BaseAcceptor.h"
 
 using namespace std;
@@ -63,6 +63,8 @@ void start_client(int32_t port, int64_t count, int64_t client_count)
 
     std::thread thr_ioc([&ioc]() {ioc.run();});
     std::thread thr_writer([&]() {
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wmissing-noreturn"
         for (uint64_t var = 0; true; )
         {
             for (auto p: clients)
@@ -84,6 +86,7 @@ void start_client(int32_t port, int64_t count, int64_t client_count)
             }
             ++ var;
         }
+#pragma clang diagnostic pop
     });
 
     // wait the thread stopped

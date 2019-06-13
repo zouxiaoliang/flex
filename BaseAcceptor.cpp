@@ -1,6 +1,6 @@
 #include "BaseAcceptor.h"
-#include "ClientFactory.h"
-#include "Protocol.h"
+#include "factory/ClientFactory.h"
+#include "protocol/Protocol.h"
 
 #include <boost/make_shared.hpp>
 #include <boost/bind.hpp>

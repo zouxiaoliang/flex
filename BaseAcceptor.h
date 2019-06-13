@@ -1,5 +1,5 @@
-#ifndef SERVICEPROTOCOL_H
-#define SERVICEPROTOCOL_H
+#ifndef BASEACCEPTOR_H
+#define BASEACCEPTOR_H
 
 
 #include <boost/asio.hpp>
@@ -101,4 +101,4 @@ protected:
 };
 
 #include "BaseAcceptor.inl"
-#endif // SERVICEPROTOCOL_H
+#endif // BASEACCEPTOR_H

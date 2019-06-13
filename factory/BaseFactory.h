@@ -15,13 +15,13 @@ typedef Transport CBaseTransport;
  * @brief The CBaseFactory class
  * @details 协议工厂，用于创建连接
  */
-class CBaseFactory
-{
+class CBaseFactory {
 public:
 
-    CBaseFactory(boost::asio::io_context &ioc);
+    explicit CBaseFactory(boost::asio::io_context &ioc);
 
     virtual ~CBaseFactory();
+
 public:
 
     /**
@@ -36,10 +36,11 @@ public:
     boost::shared_ptr<CBaseProtocol> connect_tcp(const std::string &ip, short port, time_t timeout, size_t block_size);
 
     template<class ProtocolType>
-    boost::shared_ptr<CBaseProtocol> build_accept(const boost::shared_ptr<boost::asio::ip::tcp::socket> socket, time_t timeout ,size_t block_size);
+    boost::shared_ptr<CBaseProtocol>
+    build_accept(const boost::shared_ptr<boost::asio::ip::tcp::socket> socket, time_t timeout, size_t block_size);
 
     /**
-     * @brief build_protocal 创建协议对象
+     * @brief build_protocol 创建协议对象
      * @param endpoints 对端信息
      * @param timeout 超时时间
      * @param block_size 消息块大小
@@ -48,13 +49,15 @@ public:
     template<class ProtocolType>
     boost::shared_ptr<CBaseProtocol> build_protocol(const boost::asio::ip::tcp::resolver::results_type &endpoints,
                                                     time_t timeout, size_t block_size);
+
 protected:
 
     /**
-     * @brief __build_protocolrotocol 自定义构建方法
+     * @brief __build_protocol 自定义构建方法
      * @param connector
      */
-    virtual void __build_protocol(boost::shared_ptr<Transport> connector, boost::shared_ptr<CBaseProtocol> protocol){}
+    virtual void __build_protocol(boost::shared_ptr<Transport> connector, boost::shared_ptr<CBaseProtocol> protocol) {}
+
 protected:
 
     boost::asio::io_context &m_ioc;

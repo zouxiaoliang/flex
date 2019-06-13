@@ -6,7 +6,4 @@ CBaseFactory::CBaseFactory(boost::asio::io_context &ioc):
 
 }
 
-CBaseFactory::~CBaseFactory()
-{
-
-}
+CBaseFactory::~CBaseFactory() = default;
