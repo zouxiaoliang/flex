@@ -1,5 +1,5 @@
 #include "Protocol.h"
-#include "../transport/Transport.h"
+#include "transport/TcpTransport.h"
 
 #include <boost/make_shared.hpp>
 #include <boost/chrono.hpp>
@@ -10,7 +10,7 @@
 
 #include <iostream>
 
-Protocol::Protocol(boost::asio::io_context &ioc, boost::shared_ptr<Transport> transport):
+Protocol::Protocol(boost::asio::io_context &ioc, boost::shared_ptr<TcpTransport> transport):
     CBaseProtocol(ioc, transport),
     m_timer(ioc)
 {
@@ -28,7 +28,7 @@ Protocol::~Protocol()
 
 void Protocol::write(const std::string &message)
 {
-    if (m_transport && m_transport->status() == Transport::EN_OK)
+    if (m_transport && m_transport->status() == TcpTransport::EN_OK)
     {
         std::string buffer;
         buffer.resize(sizeof(Head) + message.length());
@@ -59,7 +59,7 @@ int Protocol::transport_status()
         return m_transport->status();
     }
 
-    return Transport::EN_CLOSE;
+    return TcpTransport::EN_CLOSE;
 }
 
 void Protocol::message_received(const std::string &message)

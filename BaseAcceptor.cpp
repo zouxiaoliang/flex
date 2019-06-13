@@ -14,10 +14,7 @@ CAcceptor::CAcceptor(boost::asio::io_context &ioc, boost::shared_ptr<CBaseFactor
 {
 }
 
-CAcceptor::~CAcceptor()
-{
-
-}
+CAcceptor::~CAcceptor() = default;
 
 void CAcceptor::listen(const boost::asio::ip::tcp::endpoint &endpoint)
 {
@@ -53,15 +50,15 @@ void CAcceptor::connection_made(const boost::shared_ptr<boost::asio::ip::tcp::so
         // boost::system::error_code endpoint_error;
         // socket->local_endpoint(endpoint_error);
         // socket->remote_endpoint(endpoint_error);
-        std::cout << "eccept new client" << std::endl;
+        std::cout << "accept new client" << std::endl;
     }
     else
     {
-        std::cout << "eccept error: " << err.message() << std::endl;
+        std::cout << "accept error: " << err.message() << std::endl;
     }
 }
 
 void CAcceptorV2::connection_made(boost::shared_ptr<CBaseProtocol> session)
 {
-    std::cout << "eccept new client" << std::endl;
+    std::cout << "accept new client" << std::endl;
 }

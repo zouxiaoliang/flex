@@ -19,7 +19,7 @@ private:
     };
 
 public:
-    Protocol(boost::asio::io_context &ioc, boost::shared_ptr<Transport> transport);
+    Protocol(boost::asio::io_context &ioc, boost::shared_ptr<TcpTransport> transport);
 
     ~Protocol();
 

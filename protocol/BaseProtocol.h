@@ -4,8 +4,8 @@
 #include <boost/asio.hpp>
 
 
-class Transport;
-typedef Transport CBaseTransport;
+class TcpTransport;
+typedef TcpTransport CBaseTransport;
 
 /**
  * @brief The CBaseProtocol class 组装业务数据基类，并将数据发送到对端

@@ -18,14 +18,14 @@ INCLUDE_DIRECTORIES(.)
 
 find_package(Boost 1.67 COMPONENTS system filesystem regex thread)
 
-add_executable(${PROJECT_NAME}-client "main.cpp" "transport/Transport.cpp" "protocol/Protocol.cpp" "protocol/BaseProtocol.cpp" "factory/BaseFactory.cpp" "factory/ClientFactory.cpp" "BaseAcceptor.cpp")
+add_executable(${PROJECT_NAME}-client "main.cpp" "transport/TcpTransport.cpp" "protocol/Protocol.cpp" "protocol/BaseProtocol.cpp" "factory/BaseFactory.cpp" "factory/ClientFactory.cpp" "BaseAcceptor.cpp")
 if (APPLE)
     target_link_libraries(${PROJECT_NAME}-client ${Boost_LIBRARIES} pthread)
 else (APPLE)
     target_link_libraries(${PROJECT_NAME}-client ${Boost_LIBRARIES} pthread rt)
 endif(APPLE)
 
-add_library(${PROJECT_NAME}-shared SHARED "transport/Transport.cpp" "protocol/Protocol.cpp" "protocol/BaseProtocol.cpp" "factory/BaseFactory.cpp" "factory/ClientFactory.cpp" "BaseAcceptor.cpp")
+add_library(${PROJECT_NAME}-shared SHARED "transport/TcpTransport.cpp" "protocol/Protocol.cpp" "protocol/BaseProtocol.cpp" "factory/BaseFactory.cpp" "factory/ClientFactory.cpp" "BaseAcceptor.cpp")
 set_target_properties(${PROJECT_NAME}-shared PROPERTIES OUTPUT_NAME ${PROJECT_NAME})
 
 if (APPLE)

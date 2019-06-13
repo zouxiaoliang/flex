@@ -8,8 +8,8 @@
 #include <boost/asio.hpp>
 
 class CBaseProtocol;
-class Transport;
-typedef Transport CBaseTransport;
+class TcpTransport;
+typedef TcpTransport CBaseTransport;
 
 /**
  * @brief The CBaseFactory class
@@ -56,7 +56,7 @@ protected:
      * @brief __build_protocol 自定义构建方法
      * @param connector
      */
-    virtual void __build_protocol(boost::shared_ptr<Transport> connector, boost::shared_ptr<CBaseProtocol> protocol) {}
+    virtual void __build_protocol(boost::shared_ptr<TcpTransport> connector, boost::shared_ptr<CBaseProtocol> protocol) {}
 
 protected:
 

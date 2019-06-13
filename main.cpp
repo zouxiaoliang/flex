@@ -6,7 +6,7 @@
 #include <boost/thread.hpp>
 
 #include "protocol/Protocol.h"
-#include "transport/Transport.h"
+#include "transport/TcpTransport.h"
 #include "factory/ClientFactory.h"
 #include "BaseAcceptor.h"
 
@@ -67,9 +67,9 @@ void start_client(int32_t port, int64_t count, int64_t client_count)
 #pragma clang diagnostic ignored "-Wmissing-noreturn"
         for (uint64_t var = 0; true; )
         {
-            for (auto p: clients)
+            for (const auto& p: clients)
             {
-                if (Transport::EN_OK != p->transport_status())
+                if (TcpTransport::EN_OK != p->transport_status())
                 {
                     ::sleep(1);
                     continue;

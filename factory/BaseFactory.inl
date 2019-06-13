@@ -1,5 +1,5 @@
 #include "ClientFactory.h"
-#include "transport/Transport.h"
+#include "transport/TcpTransport.h"
 
 #include <boost/make_shared.hpp>
 #include <boost/bind.hpp>
@@ -22,7 +22,7 @@ template<class ProtocolType>
 boost::shared_ptr<CBaseProtocol> CBaseFactory::build_protocol(
         const boost::asio::ip::tcp::resolver::results_type &endpoints, time_t timeout ,size_t block_size)
 {
-    auto transport = boost::make_shared<Transport>(this->m_ioc,
+    auto transport = boost::make_shared<TcpTransport>(this->m_ioc,
                                                    boost::make_shared<boost::asio::ip::tcp::socket>(this->m_ioc),
                                                    timeout, block_size);
     auto protocol = boost::make_shared<ProtocolType>(this->m_ioc, transport);
@@ -36,7 +36,7 @@ boost::shared_ptr<CBaseProtocol> CBaseFactory::build_protocol(
 template<class ProtocolType>
 boost::shared_ptr<CBaseProtocol> CBaseFactory::build_accept(const boost::shared_ptr<boost::asio::ip::tcp::socket> socket, time_t timeout ,size_t block_size)
 {
-    auto transport = boost::make_shared<Transport>(this->m_ioc, socket, timeout, block_size);
+    auto transport = boost::make_shared<TcpTransport>(this->m_ioc, socket, timeout, block_size);
     auto protocol = boost::make_shared<ProtocolType>(this->m_ioc, transport);
 
     this->__build_protocol(transport, protocol);

@@ -1,5 +1,5 @@
 #include "BaseProtocol.h"
-#include "transport/Transport.h"
+#include "transport/TcpTransport.h"
 
 #include <boost/make_shared.hpp>
 #include <boost/chrono.hpp>

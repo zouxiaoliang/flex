@@ -1,4 +1,4 @@
-#include "Transport.h"
+#include "TcpTransport.h"
 
 #include <iostream>
 
@@ -6,7 +6,7 @@
 #include <boost/thread.hpp>
 #include <boost/make_shared.hpp>
 
-Transport::Transport(boost::asio::io_context &ioc, boost::shared_ptr<boost::asio::ip::tcp::socket> socket, time_t timeout, size_t block_size) :
+TcpTransport::TcpTransport(boost::asio::io_context &ioc, boost::shared_ptr<boost::asio::ip::tcp::socket> socket, time_t timeout, size_t block_size) :
     m_strand(ioc),
     m_socket(socket),
     m_block_size(block_size),
@@ -19,7 +19,7 @@ Transport::Transport(boost::asio::io_context &ioc, boost::shared_ptr<boost::asio
 
 }
 
-Transport::~Transport()
+TcpTransport::~TcpTransport()
 {
     if (!m_read_data)
     {
@@ -27,24 +27,24 @@ Transport::~Transport()
     }
 }
 
-void Transport::set_protocol(boost::shared_ptr<CBaseProtocol> protocol)
+void TcpTransport::set_protocol(boost::shared_ptr<CBaseProtocol> protocol)
 {
     m_protocol = protocol;
 }
 
-boost::shared_ptr<CBaseProtocol> Transport::protocol()
+boost::shared_ptr<CBaseProtocol> TcpTransport::protocol()
 {
     return m_protocol;
 }
 
-void Transport::connect(const boost::asio::ip::tcp::resolver::results_type &endpoints)
+void TcpTransport::connect(const boost::asio::ip::tcp::resolver::results_type &endpoints)
 {
     m_endpoints = endpoints;
 
     connect();
 }
 
-void Transport::connect()
+void TcpTransport::connect()
 {
     for (auto v: m_messages)
     {
@@ -57,22 +57,22 @@ void Transport::connect()
 
     boost::asio::async_connect(
                 *m_socket, m_endpoints,
-                boost::bind(&Transport::handle_connect, shared_from_this(), boost::asio::placeholders::error)
+                boost::bind(&TcpTransport::handle_connect, shared_from_this(), boost::asio::placeholders::error)
                 );
     m_transport_status = EN_CONNECTING;
 }
 
-void Transport::disconnect()
+void TcpTransport::disconnect()
 {
-    boost::asio::post(m_strand, boost::bind(&Transport::handle_close, shared_from_this()));
+    boost::asio::post(m_strand, boost::bind(&TcpTransport::handle_close, shared_from_this()));
 }
 
-int32_t Transport::status()
+int32_t TcpTransport::status()
 {
     return m_transport_status;
 }
 
-void Transport::connection_made()
+void TcpTransport::connection_made()
 {
     boost::system::error_code set_option_err;
     boost::asio::ip::tcp::no_delay no_delay(true);
@@ -83,7 +83,7 @@ void Transport::connection_made()
     do_read();
 }
 
-void Transport::write(const std::string &data, boost::function<void(const std::string &)> handle_error)
+void TcpTransport::write(const std::string &data, boost::function<void(const std::string &)> handle_error)
 {
     boost::asio::post(m_strand, [this, data, handle_error]()
     {
@@ -113,17 +113,17 @@ void Transport::write(const std::string &data, boost::function<void(const std::s
     });
 }
 
-void Transport::set_on_data_received(boost::function<void (const std::string &)> on_data_recevied)
+void TcpTransport::set_on_data_received(boost::function<void (const std::string &)> on_data_recevied)
 {
-    m_on_data_recevied = on_data_recevied;
+    m_on_data_received = on_data_recevied;
 }
 
-boost::asio::ip::tcp::endpoint Transport::endpoint(int32_t type)
+boost::asio::ip::tcp::endpoint TcpTransport::endpoint(int32_t type)
 {
     return EN_LOCAL_ENDPOINT == type ? m_socket->local_endpoint() : m_socket->remote_endpoint();
 }
 
-void Transport::handle_connect(const boost::system::error_code &err)
+void TcpTransport::handle_connect(const boost::system::error_code &err)
 {
     if (!err)
     {
@@ -153,16 +153,16 @@ void Transport::handle_connect(const boost::system::error_code &err)
     }
 }
 
-void Transport::handle_read(const boost::system::error_code &err, size_t length)
+void TcpTransport::handle_read(const boost::system::error_code &err, size_t length)
 {
     if(!err)
     {
         // std::cout << "handle read: " << length << std::endl;
 
         // 处理接收的数据
-        if (m_on_data_recevied)
+        if (m_on_data_received)
         {
-            m_on_data_recevied(std::string(m_read_data, length));
+            m_on_data_received(std::string(m_read_data, length));
         }
 
         // 接收数据
@@ -170,7 +170,7 @@ void Transport::handle_read(const boost::system::error_code &err, size_t length)
     }
     else
     {
-        std::cout << "handle_read error, messsage: " << err.message() << std::endl;
+        std::cout << "handle_read error, message: " << err.message() << std::endl;
         handle_close();
         if (m_callbacks.has<on_connection_lost>("on_connection_lost"))
         {
@@ -179,7 +179,7 @@ void Transport::handle_read(const boost::system::error_code &err, size_t length)
     }
 }
 
-void Transport::handle_write(const boost::system::error_code &err, size_t length)
+void TcpTransport::handle_write(const boost::system::error_code &err, size_t length)
 {
     if (!err)
     {
@@ -208,7 +208,7 @@ void Transport::handle_write(const boost::system::error_code &err, size_t length
     }
     else
     {
-        std::cout << "handle_write error, messsage: " << err.message() << std::endl;
+        std::cout << "handle_write error, message: " << err.message() << std::endl;
         handle_close();
 
         if (m_callbacks.has<on_connection_lost>("on_connection_lost"))
@@ -218,7 +218,7 @@ void Transport::handle_write(const boost::system::error_code &err, size_t length
     }
 }
 
-void Transport::handle_close()
+void TcpTransport::handle_close()
 {
     m_transport_status = EN_CLOSE;
     m_socket->close();
@@ -229,21 +229,26 @@ void Transport::handle_close()
     }
 }
 
-void Transport::do_write()
+void TcpTransport::do_write()
 {
     boost::asio::async_write(
                 *m_socket,
                 boost::asio::buffer(m_messages.front()->data(), m_messages.front()->size()),
                 boost::asio::transfer_at_least(m_messages.front()->size()),
-                boost::bind(&Transport::handle_write, shared_from_this(), _1, _2));
+                boost::bind(&TcpTransport::handle_write, shared_from_this(), _1, _2));
 }
 
-void Transport::do_read()
+void TcpTransport::do_read()
 {
     boost::asio::async_read(
                 *m_socket,
                 boost::asio::buffer(m_read_data, m_read_data_length),
                 boost::asio::transfer_at_least(1),
-                boost::bind(&Transport::handle_read, shared_from_this(), _1, _2)
+                boost::bind(&TcpTransport::handle_read, shared_from_this(), _1, _2)
                 );
+}
+
+void TcpTransport::check_deadline()
+{
+
 }

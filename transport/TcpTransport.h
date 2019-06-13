@@ -1,5 +1,5 @@
-#ifndef TRANSPORT_H
-#define TRANSPORT_H
+#ifndef TCPTRANSPORT_H
+#define TCPTRANSPORT_H
 
 #include <boost/asio.hpp>
 #include <boost/function.hpp>
@@ -13,7 +13,7 @@
 
 class CBaseProtocol;
 
-class Transport : public boost::enable_shared_from_this<Transport>
+class TcpTransport : public boost::enable_shared_from_this<TcpTransport>
 {
 public:
     /**
@@ -22,13 +22,13 @@ public:
     typedef boost::function<void ()> on_connected;
     typedef boost::function<void ()> on_disconnected;
     typedef boost::function<void(const std::string &)> on_data_recevied;
-    typedef boost::function<void(boost::shared_ptr<Transport>, const boost::system::error_code&)> on_connection_lost;
-    typedef boost::function<void(boost::shared_ptr<Transport>, const boost::system::error_code&)> on_connection_failed;
+    typedef boost::function<void(boost::shared_ptr<TcpTransport>, const boost::system::error_code&)> on_connection_lost;
+    typedef boost::function<void(boost::shared_ptr<TcpTransport>, const boost::system::error_code&)> on_connection_failed;
 
     typedef KeyVariant<
         boost::function<void()>,
         boost::function<void(const std::string &)>,
-        boost::function<void(boost::shared_ptr<Transport>, const boost::system::error_code&)>
+        boost::function<void(boost::shared_ptr<TcpTransport>, const boost::system::error_code&)>
     > TVariantCallBack;
 public:
     /**
@@ -48,8 +48,8 @@ public:
     };
 
 public:
-    Transport(boost::asio::io_context& ioc, boost::shared_ptr<boost::asio::ip::tcp::socket> socket, time_t timeout, size_t block_size);
-    ~Transport();
+    TcpTransport(boost::asio::io_context& ioc, boost::shared_ptr<boost::asio::ip::tcp::socket> socket, time_t timeout, size_t block_size);
+    ~TcpTransport();
 
     /**
      * @brief set_protocol 设置协议处理对象
@@ -181,9 +181,9 @@ private:
     void do_read();
 
     /**
-     * @brief check_dealine
+     * @brief check_deadline
      */
-    void check_dealine();
+    void check_deadline();
 
 private:
     boost::asio::io_context::strand m_strand;
@@ -202,13 +202,13 @@ private:
 
     boost::atomic_int32_t m_transport_status;
 
-    boost::function<void(const std::string &data)> m_on_data_recevied;
+    boost::function<void(const std::string &data)> m_on_data_received;
 
     boost::shared_ptr<CBaseProtocol> m_protocol;
 
     TVariantCallBack m_callbacks;
 };
 
-typedef Transport CBaseTransport;
+typedef TcpTransport CBaseTransport;
 
-#endif // TRANSPORT_H
+#endif // TCPTRANSPORT_H

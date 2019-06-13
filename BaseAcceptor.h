@@ -7,7 +7,7 @@
 #include <boost/enable_shared_from_this.hpp>
 
 class CBaseFactory;
-class Transport;
+class TcpTransport;
 class CBaseProtocol;
 
 /**
