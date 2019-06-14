@@ -1,4 +1,4 @@
-#include "BaseProtocol.h"
+#include "protocol/BaseProtocol.h"
 #include "transport/TcpTransport.h"
 
 #include <boost/make_shared.hpp>
@@ -10,33 +10,31 @@
 
 #include <iostream>
 
-CBaseProtocol::CBaseProtocol(boost::asio::io_context &ioc, boost::shared_ptr<CBaseTransport> transport) :
+BaseProtocol::BaseProtocol(boost::asio::io_context &ioc, boost::shared_ptr<TcpTransport> transport) :
     m_ioc(ioc),
     m_transport(transport)
 {
     if (m_transport)
     {
-        m_transport->register_callback<boost::function<void()>>("on_connected", boost::bind(&CBaseProtocol::on_connected, this));
-        m_transport->register_callback<boost::function<void()>>("on_disconnected", boost::bind(&CBaseProtocol::on_disconnected, this));
-        m_transport->register_callback<boost::function<void(const std::string &)>>("on_data_received", boost::bind(&CBaseProtocol::on_data_received, this, _1));
-        m_transport->set_on_data_received(boost::bind(&CBaseProtocol::on_data_received, this, _1));
+        m_transport->register_callback<boost::function<void()>>("on_connected", boost::bind(&BaseProtocol::on_connected, this));
+        m_transport->register_callback<boost::function<void()>>("on_disconnected", boost::bind(&BaseProtocol::on_disconnected, this));
+        m_transport->register_callback<boost::function<void(const std::string &)>>("on_raw_data_received", boost::bind(
+                &BaseProtocol::on_raw_data_received, this, _1));
+        m_transport->set_on_read(boost::bind(&BaseProtocol::on_raw_data_received, this, _1));
     }
 }
 
-CBaseProtocol::~CBaseProtocol()
-{
+BaseProtocol::~BaseProtocol() = default;
 
-}
-
-void CBaseProtocol::write(const std::string &message)
+void BaseProtocol::write(const std::string &message)
 {
     if (m_transport)
     {
-        m_transport->write(message, boost::bind(&CBaseProtocol::on_write_error, this, _1));
+        m_transport->write(message, boost::bind(&BaseProtocol::on_write_error, this, _1));
     }
 }
 
-void CBaseProtocol::close()
+void BaseProtocol::close()
 {
     if (m_transport)
     {
@@ -44,36 +42,36 @@ void CBaseProtocol::close()
     }
 }
 
-int CBaseProtocol::transport_status()
+int BaseProtocol::transport_status()
 {
     if (m_transport)
     {
         return m_transport->status();
     }
-    return CBaseTransport::EN_CLOSE;
+    return transport::EN_CLOSE;
 }
 
-void CBaseProtocol::on_connected()
+void BaseProtocol::on_connected()
 {
 
 }
 
-void CBaseProtocol::on_disconnected()
+void BaseProtocol::on_disconnected()
 {
 
 }
 
-void CBaseProtocol::on_write_error(const std::string &data)
+void BaseProtocol::on_write_error(const std::string &data)
 {
 
 }
 
-void CBaseProtocol::message_received(const std::string &message)
+void BaseProtocol::on_message_received(const std::string &message)
 {
 
 }
 
-void CBaseProtocol::on_data_received(const std::string &data)
+void BaseProtocol::on_raw_data_received(const std::string &data)
 {
 
 }

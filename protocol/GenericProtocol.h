@@ -1,5 +1,5 @@
-#ifndef PROTOCOL_H
-#define PROTOCOL_H
+#ifndef GENERICPROTOCOL_H
+#define GENERICPROTOCOL_H
 
 #include <boost/asio.hpp>
 #include <list>
@@ -9,7 +9,7 @@
 /**
  * @brief The Protocol class 组装业务数据，并将数据发送到对端
  */
-class Protocol : public CBaseProtocol
+class GenericProtocol : public BaseProtocol
 {
 private:
     struct Head
@@ -19,9 +19,9 @@ private:
     };
 
 public:
-    Protocol(boost::asio::io_context &ioc, boost::shared_ptr<TcpTransport> transport);
+    GenericProtocol(boost::asio::io_context &ioc, boost::shared_ptr<TcpTransport> transport);
 
-    ~Protocol();
+    ~GenericProtocol();
 
 public:
     /**
@@ -39,14 +39,14 @@ public:
      * @brief transport_status
      * @return
      */
-    int transport_status();
+    int32_t transport_status();
 
 protected:
     /**
-     * @brief data_received 数据接收回调
+     * @brief on_message_received 数据接收回调
      * @param message 消息
      */
-    virtual void message_received(const std::string &message);
+    virtual void on_message_received(const std::string &message);
 
     /**
      * @brief on_connected
@@ -59,10 +59,10 @@ protected:
     virtual void on_disconnected();
 
     /**
-     * @brief on_data_received 对收到的消息进行处理
+     * @brief on_raw_data_received 对收到的消息进行处理
      * @param data
      */
-    virtual void on_data_received(const std::string &data);
+    virtual void on_raw_data_received(const std::string &data);
 
     /**
      * @brief on_write_error
@@ -84,4 +84,4 @@ protected:
     boost::asio::deadline_timer m_timer;
 };
 
-#endif // PROTOCOL_H
+#endif // GENERICPROTOCOL_H

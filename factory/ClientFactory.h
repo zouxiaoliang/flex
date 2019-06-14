@@ -11,7 +11,7 @@
  *      2、针对连接失败进行处理，例如重连机制
  *      3、针对连接丢失进行处理，例如重连机制
  */
-class ClientFactory : public CBaseFactory
+class ClientFactory : public BaseFactory
 {
 public:
 
@@ -21,11 +21,11 @@ public:
 protected:
 
     /**
-     * @brief __build_protocolrotocol 自定义构建方法，注册重连回调函数
+     * @brief __build_protocol 自定义构建方法，注册重连回调函数
      * @param transport
      * @param protocol
      */
-    virtual void __build_protocol(boost::shared_ptr<TcpTransport> transport, boost::shared_ptr<CBaseProtocol> protocol);
+    virtual void __build_protocol(boost::shared_ptr<TcpTransport> transport, boost::shared_ptr<BaseProtocol> protocol);
 public:
 
     /**

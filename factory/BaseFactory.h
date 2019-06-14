@@ -7,20 +7,20 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/asio.hpp>
 
-class CBaseProtocol;
+class BaseProtocol;
+
 class TcpTransport;
-typedef TcpTransport CBaseTransport;
 
 /**
  * @brief The CBaseFactory class
  * @details 协议工厂，用于创建连接
  */
-class CBaseFactory {
+class BaseFactory {
 public:
 
-    explicit CBaseFactory(boost::asio::io_context &ioc);
+    explicit BaseFactory(boost::asio::io_context &ioc);
 
-    virtual ~CBaseFactory();
+    virtual ~BaseFactory();
 
 public:
 
@@ -33,11 +33,18 @@ public:
      * @return 协议处理对象
      */
     template<class ProtocolType>
-    boost::shared_ptr<CBaseProtocol> connect_tcp(const std::string &ip, short port, time_t timeout, size_t block_size);
+    boost::shared_ptr<ProtocolType> connect_tcp(const std::string &ip, int32_t port, time_t timeout, size_t block_size);
 
+
+    /**
+     * @brief on_accept
+     * @param socket
+     * @param timeout
+     * @param block_size
+     * @return
+     */
     template<class ProtocolType>
-    boost::shared_ptr<CBaseProtocol>
-    build_accept(const boost::shared_ptr<boost::asio::ip::tcp::socket> socket, time_t timeout, size_t block_size);
+    boost::shared_ptr<ProtocolType> on_accept(const boost::shared_ptr<boost::asio::ip::tcp::socket> socket, time_t timeout, size_t block_size);
 
     /**
      * @brief build_protocol 创建协议对象
@@ -47,8 +54,8 @@ public:
      * @return 协议处理对象
      */
     template<class ProtocolType>
-    boost::shared_ptr<CBaseProtocol> build_protocol(const boost::asio::ip::tcp::resolver::results_type &endpoints,
-                                                    time_t timeout, size_t block_size);
+    boost::shared_ptr<ProtocolType> build_protocol(const boost::asio::ip::tcp::resolver::results_type &endpoints,
+                                                   time_t timeout, size_t block_size);
 
 protected:
 
@@ -56,7 +63,7 @@ protected:
      * @brief __build_protocol 自定义构建方法
      * @param connector
      */
-    virtual void __build_protocol(boost::shared_ptr<TcpTransport> connector, boost::shared_ptr<CBaseProtocol> protocol) {}
+    virtual void __build_protocol(boost::shared_ptr<TcpTransport> connector, boost::shared_ptr<BaseProtocol> protocol) {}
 
 protected:
 

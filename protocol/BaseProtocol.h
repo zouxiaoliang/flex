@@ -5,17 +5,16 @@
 
 
 class TcpTransport;
-typedef TcpTransport CBaseTransport;
 
 /**
  * @brief The CBaseProtocol class 组装业务数据基类，并将数据发送到对端
  */
-class CBaseProtocol
+class BaseProtocol
 {
 public:
-    CBaseProtocol(boost::asio::io_context &ioc, boost::shared_ptr<CBaseTransport> transport);
+    BaseProtocol(boost::asio::io_context &ioc, boost::shared_ptr<TcpTransport> transport);
 
-    virtual ~CBaseProtocol();
+    virtual ~BaseProtocol();
 
 public:
     /**
@@ -56,20 +55,20 @@ protected:
 
 protected:
     /**
-     * @brief data_received 数据接收回调
+     * @brief on_message_received 数据接收回调
      * @param message 消息
      */
-    virtual void message_received(const std::string &message);
+    virtual void on_message_received(const std::string &message);
 
     /**
-     * @brief on_data_received 对收到的消息进行处理
+     * @brief on_raw_data_received 对收到的消息进行处理
      * @param data
      */
-    virtual void on_data_received(const std::string &data);
+    virtual void on_raw_data_received(const std::string &data);
 
 protected:
     boost::asio::io_context &m_ioc;
-    boost::shared_ptr<CBaseTransport> m_transport;
+    boost::shared_ptr<TcpTransport> m_transport;
 };
 
 #endif // BASEPROTOCOL_H

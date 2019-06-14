@@ -1,18 +1,18 @@
 #include <iostream>
 #include <thread>
-
+#include <inttypes.h>
 #include <boost/asio.hpp>
 #include <boost/make_shared.hpp>
 #include <boost/thread.hpp>
 
-#include "protocol/Protocol.h"
+#include "protocol/GenericProtocol.h"
 #include "transport/TcpTransport.h"
 #include "factory/ClientFactory.h"
-#include "BaseAcceptor.h"
+#include "TcpListener.h"
 
 using namespace std;
 
-void start_client(int32_t port, int64_t count, int64_t client_count)
+void start_client(int32_t port, uint64_t count, int64_t client_count)
 {
     boost::asio::io_context ioc;
 
@@ -21,10 +21,10 @@ void start_client(int32_t port, int64_t count, int64_t client_count)
     auto client_factory = boost::make_shared<ClientFactory>(ioc);
 
     // clients
-    std::vector<boost::shared_ptr<CBaseProtocol>> clients;
+    std::vector<boost::shared_ptr<BaseProtocol>> clients;
     for (int var = 0; var < client_count; ++ var)
     {
-        auto client_instance = client_factory->connect_tcp<Protocol>(host.c_str(), port, 10, 1024);
+        auto client_instance = client_factory->connect_tcp<GenericProtocol>(host.c_str(), port, 10, 1024);
         if (client_instance)
             clients.push_back(client_instance);
     }
@@ -57,7 +57,7 @@ void start_client(int32_t port, int64_t count, int64_t client_count)
                       "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
                       "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
                       "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
-                      "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx%llu";
+                      "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx%" PRIu64;
 
     char buffer[2048] = {};
 
@@ -69,7 +69,7 @@ void start_client(int32_t port, int64_t count, int64_t client_count)
         {
             for (const auto& p: clients)
             {
-                if (TcpTransport::EN_OK != p->transport_status())
+                if (transport::EN_OK != p->transport_status())
                 {
                     ::sleep(1);
                     continue;
@@ -102,17 +102,21 @@ void start_client(int32_t port, int64_t count, int64_t client_count)
 
 void start_server()
 {
-    boost::asio::io_context ioc;
+    auto ioc = boost::make_shared<boost::asio::io_context>();
 
-    short port = 8000;
+    uint16_t port = 8000;
     boost::asio::ip::address address = boost::asio::ip::make_address("0.0.0.0");
-    auto client_factory = boost::make_shared<ClientFactory>(ioc);
+    auto client_factory = boost::make_shared<ClientFactory>(*ioc.get());
 
     // service
-    CAcceptor accept(ioc, client_factory);
-    accept.listen(boost::asio::ip::tcp::endpoint(address, port));
+    TcpListener listener;
+    listener.listen<GenericProtocol>(
+                ioc,
+                boost::asio::ip::tcp::endpoint(address, port),
+                client_factory
+                );
 
-    ioc.run();
+    ioc->run();
 }
 
 int main(int argc, char *argv[])
@@ -124,7 +128,7 @@ int main(int argc, char *argv[])
     }
     else if (argc >= 5 && 0 == strcasecmp(argv[1], "client"))
     {
-        start_client(::atoi(argv[2]), ::atoi(argv[3]), ::atoi(argv[4]));
+        start_client(::atoi(argv[2]), ::strtoull(argv[3], &argv[3]+strlen(argv[3]), 10), ::atoi(argv[4]));
     }
     else
     {

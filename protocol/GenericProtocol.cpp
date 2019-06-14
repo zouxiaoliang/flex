@@ -1,4 +1,4 @@
-#include "Protocol.h"
+#include "GenericProtocol.h"
 #include "transport/TcpTransport.h"
 
 #include <boost/make_shared.hpp>
@@ -10,25 +10,22 @@
 
 #include <iostream>
 
-Protocol::Protocol(boost::asio::io_context &ioc, boost::shared_ptr<TcpTransport> transport):
-    CBaseProtocol(ioc, transport),
+GenericProtocol::GenericProtocol(boost::asio::io_context &ioc, boost::shared_ptr<TcpTransport> transport):
+    BaseProtocol(ioc, transport),
     m_timer(ioc)
 {
     m_error_count = 0;
     m_recv_count = 0;
     m_timer.expires_from_now(boost::posix_time::seconds(5));
-    m_timer.async_wait(boost::bind(&Protocol::print, this));
+    m_timer.async_wait(boost::bind(&GenericProtocol::print, this));
     m_buffer.reserve(100 * 1024);
 }
 
-Protocol::~Protocol()
-{
+GenericProtocol::~GenericProtocol() = default;
 
-}
-
-void Protocol::write(const std::string &message)
+void GenericProtocol::write(const std::string &message)
 {
-    if (m_transport && m_transport->status() == TcpTransport::EN_OK)
+    if (m_transport && m_transport->status() == transport::EN_OK)
     {
         std::string buffer;
         buffer.resize(sizeof(Head) + message.length());
@@ -40,11 +37,11 @@ void Protocol::write(const std::string &message)
         char *body = (char *)h + sizeof(Head);
         memcpy(body, message.c_str(), message.size());
 
-        m_transport->write(buffer, boost::bind(&Protocol::on_write_error, this, _1));
+        m_transport->write(buffer, boost::bind(&GenericProtocol::on_write_error, this, _1));
     }
 }
 
-void Protocol::close()
+void GenericProtocol::close()
 {
     if (m_transport)
     {
@@ -52,23 +49,23 @@ void Protocol::close()
     }
 }
 
-int Protocol::transport_status()
+int32_t GenericProtocol::transport_status()
 {
     if (m_transport)
     {
         return m_transport->status();
     }
 
-    return TcpTransport::EN_CLOSE;
+    return transport::EN_CLOSE;
 }
 
-void Protocol::message_received(const std::string &message)
+void GenericProtocol::on_message_received(const std::string &message)
 {
     // std::cout << "recv: " << message << std::endl;
     ++m_recv_count;
 }
 
-void Protocol::on_connected()
+void GenericProtocol::on_connected()
 {
     m_buffer.clear();
     // 连接成功，需要做的事情
@@ -76,12 +73,12 @@ void Protocol::on_connected()
     this->write("hello world");
 }
 
-void Protocol::on_disconnected()
+void GenericProtocol::on_disconnected()
 {
     m_buffer.clear();
 }
 
-void Protocol::on_data_received(const std::string &data)
+void GenericProtocol::on_raw_data_received(const std::string &data)
 {
     // std::cout << "recv data length: " << data.size() << std::endl;
     // return ;
@@ -101,26 +98,26 @@ void Protocol::on_data_received(const std::string &data)
         // 对收到的消息包进行处理
         // 对登陆应答进行处理
         // 对心跳应答进行处理
-        message_received(std::string(&m_buffer[pos + sizeof(Head)], ntohl(h->length)));
+        on_message_received(std::string(&m_buffer[pos + sizeof(Head)], ntohl(h->length)));
 
         pos += sizeof(Head) + ntohl(h->length);
     }
     m_buffer = m_buffer.substr(pos);
 }
 
-void Protocol::on_write_error(const std::string &data)
+void GenericProtocol::on_write_error(const std::string &data)
 {
 //    std::cout << "send data failed, data length: " << data.size() <<
     //                 ", transport status: " << m_transport->status() << std::endl;
     ++ m_error_count;
 }
 
-void Protocol::print()
+void GenericProtocol::print()
 {
     std::cout << "time:" << ::time(0) << std::endl;
     std::cout << "      error_count: " << m_error_count << std::endl;
     std::cout << "      recv_count: " << m_recv_count << std::endl;
 
     m_timer.expires_from_now(boost::posix_time::seconds(5));
-    m_timer.async_wait(boost::bind(&Protocol::print, this));
+    m_timer.async_wait(boost::bind(&GenericProtocol::print, this));
 }

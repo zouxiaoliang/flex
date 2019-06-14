@@ -7,14 +7,11 @@
 #include <boost/make_shared.hpp>
 
 TcpTransport::TcpTransport(boost::asio::io_context &ioc, boost::shared_ptr<boost::asio::ip::tcp::socket> socket, time_t timeout, size_t block_size) :
-    m_strand(ioc),
+    BaseTransport<boost::asio::ip::tcp::resolver::results_type, TVariantCallBack> (ioc, timeout, block_size),
     m_socket(socket),
-    m_block_size(block_size),
-    m_timeout(timeout),
     m_read_data(new char[block_size]),
     m_read_data_length(block_size),
-    m_messages(),
-    m_transport_status(EN_CLOSE)
+    m_messages()
 {
 
 }
@@ -25,16 +22,6 @@ TcpTransport::~TcpTransport()
     {
         delete [] m_read_data;
     }
-}
-
-void TcpTransport::set_protocol(boost::shared_ptr<CBaseProtocol> protocol)
-{
-    m_protocol = protocol;
-}
-
-boost::shared_ptr<CBaseProtocol> TcpTransport::protocol()
-{
-    return m_protocol;
 }
 
 void TcpTransport::connect(const boost::asio::ip::tcp::resolver::results_type &endpoints)
@@ -53,13 +40,13 @@ void TcpTransport::connect()
     }
     m_messages.clear();
 
-    m_transport_status = EN_READY;
+    m_transport_status = transport::EN_READY;
 
     boost::asio::async_connect(
                 *m_socket, m_endpoints,
                 boost::bind(&TcpTransport::handle_connect, shared_from_this(), boost::asio::placeholders::error)
                 );
-    m_transport_status = EN_CONNECTING;
+    m_transport_status = transport::EN_CONNECTING;
 }
 
 void TcpTransport::disconnect()
@@ -78,7 +65,7 @@ void TcpTransport::connection_made()
     boost::asio::ip::tcp::no_delay no_delay(true);
 
     m_socket->set_option(no_delay, set_option_err);
-    m_transport_status = EN_OK;
+    m_transport_status = transport::EN_OK;
     // 接收数据
     do_read();
 }
@@ -90,7 +77,7 @@ void TcpTransport::write(const std::string &data, boost::function<void(const std
         bool trigger = !m_messages.empty();
 
         // 通讯状态OK且缓存队列未满，将消息加入缓存队列
-        if (m_messages.size() < 10000 && EN_OK == status())
+        if (m_messages.size() < 10000 && transport::EN_OK == status())
         {
             auto s = m_allocator.allocate(1);
             m_allocator.construct(s, data);
@@ -113,11 +100,6 @@ void TcpTransport::write(const std::string &data, boost::function<void(const std
     });
 }
 
-void TcpTransport::set_on_data_received(boost::function<void (const std::string &)> on_data_received)
-{
-    m_on_data_received = on_data_received;
-}
-
 boost::asio::ip::tcp::endpoint TcpTransport::endpoint(int32_t type)
 {
     return EN_LOCAL_ENDPOINT == type ? m_socket->local_endpoint() : m_socket->remote_endpoint();
@@ -133,10 +115,10 @@ void TcpTransport::handle_connect(const boost::system::error_code &err)
         m_socket->set_option(no_delay, set_option_err);
         if (!set_option_err)
         {
-            m_transport_status = EN_OK;
-            if (m_callbacks.has<on_connected>("on_connected"))
+            m_transport_status = transport::EN_OK;
+            if (m_on_events.has<on_connected>("on_connected"))
             {
-                m_callbacks.get<on_connected>("on_connected")();
+                m_on_events.get<on_connected>("on_connected")();
             }
             // 接收数据
             do_read();
@@ -144,11 +126,11 @@ void TcpTransport::handle_connect(const boost::system::error_code &err)
     }
     else
     {
-        m_transport_status = EN_CLOSE;
+        m_transport_status = transport::EN_CLOSE;
         std::cout << "handle_connect error, messsage: " << err.message() << std::endl;
-        if (m_callbacks.has<on_connection_failed>("on_connection_failed"))
+        if (m_on_events.has<on_connection_failed>("on_connection_failed"))
         {
-            m_callbacks.get<on_connection_failed>("on_connection_failed")(shared_from_this(), err);
+            m_on_events.get<on_connection_failed>("on_connection_failed")(shared_from_this(), err);
         }
     }
 }
@@ -160,9 +142,9 @@ void TcpTransport::handle_read(const boost::system::error_code &err, size_t leng
         // std::cout << "handle read: " << length << std::endl;
 
         // 处理接收的数据
-        if (m_on_data_received)
+        if (m_on_read)
         {
-            m_on_data_received(std::string(m_read_data, length));
+            m_on_read(std::string(m_read_data, length));
         }
 
         // 接收数据
@@ -172,9 +154,9 @@ void TcpTransport::handle_read(const boost::system::error_code &err, size_t leng
     {
         std::cout << "handle_read error, message: " << err.message() << std::endl;
         handle_close();
-        if (m_callbacks.has<on_connection_lost>("on_connection_lost"))
+        if (m_on_events.has<on_connection_lost>("on_connection_lost"))
         {
-            m_callbacks.get<on_connection_lost>("on_connection_lost")(shared_from_this(), err);
+            m_on_events.get<on_connection_lost>("on_connection_lost")(shared_from_this(), err);
         }
     }
 }
@@ -211,21 +193,21 @@ void TcpTransport::handle_write(const boost::system::error_code &err, size_t len
         std::cout << "handle_write error, message: " << err.message() << std::endl;
         handle_close();
 
-        if (m_callbacks.has<on_connection_lost>("on_connection_lost"))
+        if (m_on_events.has<on_connection_lost>("on_connection_lost"))
         {
-            m_callbacks.get<on_connection_lost>("on_connection_lost")(shared_from_this(), err);
+            m_on_events.get<on_connection_lost>("on_connection_lost")(shared_from_this(), err);
         }
     }
 }
 
 void TcpTransport::handle_close()
 {
-    m_transport_status = EN_CLOSE;
+    m_transport_status = transport::EN_CLOSE;
     m_socket->close();
     std::cout << "close_socket" << std::endl;
-    if (m_callbacks.has<on_disconnected>("on_disconnected"))
+    if (m_on_events.has<on_disconnected>("on_disconnected"))
     {
-        m_callbacks.get<on_disconnected>("on_disconnected")();
+        m_on_events.get<on_disconnected>("on_disconnected")();
     }
 }
 

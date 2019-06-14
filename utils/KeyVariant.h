@@ -2,10 +2,14 @@
 #define KEYVARIANT_H
 
 #include <boost/variant.hpp>
+// std cont
 #include <string>
 #include <vector>
 #include <list>
 #include <map>
+#include <unordered_set>
+#include <unordered_map>
+
 #include <iostream>
 
 template<class ... Args>
@@ -66,7 +70,7 @@ public:
     }
 
 private:
-    std::map<std::string, ValueType> m_variants;
+    std::unordered_map<std::string, ValueType> m_variants;
 };
 
 #endif // KEYVARIANT_H

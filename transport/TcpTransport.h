@@ -8,39 +8,31 @@
 
 #include <memory>
 
+#include "BaseTransport.h"
+
 #include "utils/KeyVariant.h"
 #include "utils/sgi_plus.h"
 
-class CBaseProtocol;
+class TcpTransport;
+/**
+ * @brief CallBack 可变类型回调函数
+ */
+typedef boost::function<void ()> on_connected;
+typedef boost::function<void ()> on_disconnected;
+typedef boost::function<void(const std::string &)> on_data_recevied;
+typedef boost::function<void(boost::shared_ptr<TcpTransport>, const boost::system::error_code&)> on_connection_lost;
+typedef boost::function<void(boost::shared_ptr<TcpTransport>, const boost::system::error_code&)> on_connection_failed;
 
-class TcpTransport : public boost::enable_shared_from_this<TcpTransport>
+typedef KeyVariant<
+    boost::function<void()>,
+    boost::function<void(const std::string &)>,
+    boost::function<void(boost::shared_ptr<TcpTransport>, const boost::system::error_code&)>
+> TVariantCallBack;
+
+class TcpTransport : public boost::enable_shared_from_this<TcpTransport> ,
+        public BaseTransport<boost::asio::ip::tcp::resolver::results_type, TVariantCallBack>
 {
 public:
-    /**
-     * @brief CallBack 可变类型回调函数
-     */
-    typedef boost::function<void ()> on_connected;
-    typedef boost::function<void ()> on_disconnected;
-    typedef boost::function<void(const std::string &)> on_data_recevied;
-    typedef boost::function<void(boost::shared_ptr<TcpTransport>, const boost::system::error_code&)> on_connection_lost;
-    typedef boost::function<void(boost::shared_ptr<TcpTransport>, const boost::system::error_code&)> on_connection_failed;
-
-    typedef KeyVariant<
-        boost::function<void()>,
-        boost::function<void(const std::string &)>,
-        boost::function<void(boost::shared_ptr<TcpTransport>, const boost::system::error_code&)>
-    > TVariantCallBack;
-public:
-    /**
-     * transport 状态
-     */
-    enum {
-        EN_READY,
-        EN_CONNECTING,
-        EN_OK,
-        EN_CLOSE
-    };
-
     enum
     {
         EN_LOCAL_ENDPOINT,
@@ -48,20 +40,25 @@ public:
     };
 
 public:
-    TcpTransport(boost::asio::io_context& ioc, boost::shared_ptr<boost::asio::ip::tcp::socket> socket, time_t timeout, size_t block_size);
-    ~TcpTransport();
+    TcpTransport(
+            boost::asio::io_context& ioc,
+            boost::shared_ptr<boost::asio::ip::tcp::socket> socket,
+            time_t timeout,
+            size_t block_size
+            );
+    virtual ~TcpTransport();
 
     /**
      * @brief set_protocol 设置协议处理对象
      * @param protocol 协议
      */
-    void set_protocol(boost::shared_ptr<CBaseProtocol> protocol);
+    void set_protocol(boost::shared_ptr<BaseProtocol> protocol);
 
     /**
      * @brief protocol 获取协议对象
      * @return 协议对象指针
      */
-    boost::shared_ptr<CBaseProtocol> protocol();
+    boost::shared_ptr<BaseProtocol> protocol();
 
     /**
      * @brief status 设置当前transport的状态
@@ -100,43 +97,6 @@ public:
      * @brief write 数据写入接口
      */
     void write(const std::string &data, boost::function<void(const std::string &)> handle_error);
-
-    /**
-     * @brief register_callback 回调函数注册
-     * @param name
-     * @param callback
-     * @return
-     */
-    template<class T>
-    bool register_callback(const char *name, T callback)
-    {
-        if (nullptr == name)
-        {
-            return false;
-        }
-        std::cout << "register callback name: " << name << std::endl;
-        m_callbacks.set<T>(name, callback);
-        return true;
-    }
-
-    /**
-     * @brief unregister_callback
-     * @param name
-     */
-    void unregister_callback(const char *name)
-    {
-        if (nullptr == name)
-        {
-            return;
-        }
-        m_callbacks.remove(name);
-    }
-
-    /**
-     * @brief set_data_received 这是消息处理毁掉函数
-     * @param on_data_recevied 会掉接口
-     */
-    void set_on_data_received(boost::function<void(const std::string &data)> on_data_received);
 
     /**
      * @brief endpoint 获取连接地址信息
@@ -186,12 +146,8 @@ private:
     void check_deadline();
 
 private:
-    boost::asio::io_context::strand m_strand;
     boost::shared_ptr<boost::asio::ip::tcp::socket> m_socket;
     boost::asio::ip::tcp::resolver::results_type m_endpoints;
-
-    size_t m_block_size;
-    time_t m_timeout;
 
     char *m_read_data;
     size_t m_read_data_length;
@@ -199,16 +155,6 @@ private:
     std::allocator<std::string> m_allocator;
 
     std::SGIList<std::string*> m_messages;
-
-    boost::atomic_int32_t m_transport_status;
-
-    boost::function<void(const std::string &data)> m_on_data_received;
-
-    boost::shared_ptr<CBaseProtocol> m_protocol;
-
-    TVariantCallBack m_callbacks;
 };
-
-typedef TcpTransport CBaseTransport;
 
 #endif // TCPTRANSPORT_H

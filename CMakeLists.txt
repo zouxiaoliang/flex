@@ -18,14 +18,14 @@ INCLUDE_DIRECTORIES(.)
 
 find_package(Boost 1.67 COMPONENTS system filesystem regex thread)
 
-add_executable(${PROJECT_NAME}-client "main.cpp" "transport/TcpTransport.cpp" "protocol/Protocol.cpp" "protocol/BaseProtocol.cpp" "factory/BaseFactory.cpp" "factory/ClientFactory.cpp" "BaseAcceptor.cpp")
+add_executable(${PROJECT_NAME}-client "main.cpp" "transport/TcpTransport.cpp" "protocol/GenericProtocol.cpp" "protocol/BaseProtocol.cpp" "factory/BaseFactory.cpp" "factory/ClientFactory.cpp" "TcpListener.cpp" transport/BaseTransport.cpp transport/BaseTransport.h)
 if (APPLE)
     target_link_libraries(${PROJECT_NAME}-client ${Boost_LIBRARIES} pthread)
 else (APPLE)
     target_link_libraries(${PROJECT_NAME}-client ${Boost_LIBRARIES} pthread rt)
 endif(APPLE)
 
-add_library(${PROJECT_NAME}-shared SHARED "transport/TcpTransport.cpp" "protocol/Protocol.cpp" "protocol/BaseProtocol.cpp" "factory/BaseFactory.cpp" "factory/ClientFactory.cpp" "BaseAcceptor.cpp")
+add_library(${PROJECT_NAME}-shared SHARED "transport/TcpTransport.cpp" "protocol/GenericProtocol.cpp" "protocol/BaseProtocol.cpp" "factory/BaseFactory.cpp" "factory/ClientFactory.cpp" "TcpListener.cpp" transport/BaseTransport.cpp transport/BaseTransport.h)
 set_target_properties(${PROJECT_NAME}-shared PROPERTIES OUTPUT_NAME ${PROJECT_NAME})
 
 if (APPLE)

@@ -1,9 +1,9 @@
 #include "BaseFactory.h"
 
-CBaseFactory::CBaseFactory(boost::asio::io_context &ioc):
+BaseFactory::BaseFactory(boost::asio::io_context &ioc):
     m_ioc(ioc)
 {
 
 }
 
-CBaseFactory::~CBaseFactory() = default;
+BaseFactory::~BaseFactory() = default;
