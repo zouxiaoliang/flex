@@ -136,7 +136,7 @@ public:
      * @brief set_data_received 这是消息处理毁掉函数
      * @param on_data_recevied 会掉接口
      */
-    void set_on_data_received(boost::function<void(const std::string &data)> on_data_recevied);
+    void set_on_data_received(boost::function<void(const std::string &data)> on_data_received);
 
     /**
      * @brief endpoint 获取连接地址信息

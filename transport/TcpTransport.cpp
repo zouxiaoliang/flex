@@ -113,9 +113,9 @@ void TcpTransport::write(const std::string &data, boost::function<void(const std
     });
 }
 
-void TcpTransport::set_on_data_received(boost::function<void (const std::string &)> on_data_recevied)
+void TcpTransport::set_on_data_received(boost::function<void (const std::string &)> on_data_received)
 {
-    m_on_data_received = on_data_recevied;
+    m_on_data_received = on_data_received;
 }
 
 boost::asio::ip::tcp::endpoint TcpTransport::endpoint(int32_t type)
