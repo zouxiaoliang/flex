@@ -1,10 +1,10 @@
-#include "BaseAcceptor.h"
+#include "TcpListener.h"
 #include "factory/BaseFactory.h"
 
 #include <iostream>
 
 template <class ProtocolType>
-void CAcceptorV2::listen(boost::shared_ptr<boost::asio::io_context> ioc, const boost::asio::ip::tcp::endpoint& endpoint, boost::shared_ptr<CBaseFactory> factory)
+void TcpListener::listen(boost::shared_ptr<boost::asio::io_context> ioc, const boost::asio::ip::tcp::endpoint& endpoint, boost::shared_ptr<BaseFactory> factory)
 {
     boost::shared_ptr<boost::asio::ip::tcp::acceptor> acceptor = boost::make_shared<boost::asio::ip::tcp::acceptor>(*ioc);
     acceptor->open(endpoint.protocol());
@@ -15,13 +15,13 @@ void CAcceptorV2::listen(boost::shared_ptr<boost::asio::io_context> ioc, const b
 }
 
 template <class ProtocolType>
-void CAcceptorV2::do_accept(boost::shared_ptr<boost::asio::io_context> ioc,
+void TcpListener::do_accept(boost::shared_ptr<boost::asio::io_context> ioc,
                boost::shared_ptr<boost::asio::ip::tcp::acceptor> acceptor,
-               boost::shared_ptr<CBaseFactory> factory)
+               boost::shared_ptr<BaseFactory> factory)
 {
     boost::shared_ptr<boost::asio::ip::tcp::socket> socket = boost::make_shared<boost::asio::ip::tcp::socket>(*ioc);
     acceptor->async_accept(*socket,
-                            boost::bind(&CAcceptorV2::handle_accept<ProtocolType>,
+                            boost::bind(&TcpListener::handle_accept<ProtocolType>,
                                         this,
                                         ioc,
                                         acceptor,
@@ -33,19 +33,20 @@ void CAcceptorV2::do_accept(boost::shared_ptr<boost::asio::io_context> ioc,
 }
 
 template <class ProtocolType>
-void CAcceptorV2::handle_accept(
+void TcpListener::handle_accept(
         boost::shared_ptr<boost::asio::io_context> ioc,
         boost::shared_ptr<boost::asio::ip::tcp::acceptor> acceptor,
         const boost::shared_ptr<boost::asio::ip::tcp::socket> socket,
-        boost::shared_ptr<CBaseFactory> factory,
+        boost::shared_ptr<BaseFactory> factory,
         const boost::system::error_code &err)
 {
     if (!err)
     {
         do_accept<ProtocolType>(ioc ,acceptor, factory);
-        connection_made(factory->build_accept<ProtocolType>(socket, 10, 1024));
+        connection_made(factory->on_accept<ProtocolType>(socket, 10, 1024));
     }
-    else {
+    else
+    {
         std::cout << "eccept error: " << err.message() << std::endl;
     }
 }
