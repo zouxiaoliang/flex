@@ -19,7 +19,7 @@ private:
     };
 
 public:
-    GenericProtocol(boost::asio::io_context &ioc, boost::shared_ptr<TcpTransport> transport);
+    GenericProtocol(boost::shared_ptr<boost::asio::io_context> ioc, boost::shared_ptr<TcpTransport> transport);
 
     ~GenericProtocol();
 

@@ -21,15 +21,15 @@ void TcpListener::do_accept(boost::shared_ptr<boost::asio::io_context> ioc,
 {
     boost::shared_ptr<boost::asio::ip::tcp::socket> socket = boost::make_shared<boost::asio::ip::tcp::socket>(*ioc);
     acceptor->async_accept(*socket,
-                            boost::bind(&TcpListener::handle_accept<ProtocolType>,
-                                        this,
-                                        ioc,
-                                        acceptor,
-                                        socket,
-                                        factory,
-                                        boost::asio::placeholders::error
-                                        )
-                            );
+                           boost::bind(&TcpListener::handle_accept<ProtocolType>,
+                                       this,
+                                       ioc,
+                                       acceptor,
+                                       socket,
+                                       factory,
+                                       boost::asio::placeholders::error
+                                       )
+                           );
 }
 
 template <class ProtocolType>

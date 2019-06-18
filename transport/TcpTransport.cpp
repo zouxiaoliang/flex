@@ -6,8 +6,8 @@
 #include <boost/thread.hpp>
 #include <boost/make_shared.hpp>
 
-TcpTransport::TcpTransport(boost::asio::io_context &ioc, boost::shared_ptr<boost::asio::ip::tcp::socket> socket, time_t timeout, size_t block_size) :
-    BaseTransport<boost::asio::ip::tcp::resolver::results_type, TVariantCallBack> (ioc, timeout, block_size),
+TcpTransport::TcpTransport(boost::shared_ptr<boost::asio::io_context> ioc, boost::shared_ptr<boost::asio::ip::tcp::socket> socket, time_t timeout, size_t block_size) :
+    BaseTransport<boost::asio::ip::tcp::resolver::results_type, tcp::TOnEvent> (ioc, timeout, block_size),
     m_socket(socket),
     m_read_data(new char[block_size]),
     m_read_data_length(block_size),
@@ -116,9 +116,9 @@ void TcpTransport::handle_connect(const boost::system::error_code &err)
         if (!set_option_err)
         {
             m_transport_status = transport::EN_OK;
-            if (m_on_events.has<on_connected>("on_connected"))
+            if (m_on_events.has<tcp::on_connected>("on_connected"))
             {
-                m_on_events.get<on_connected>("on_connected")();
+                m_on_events.get<tcp::on_connected>("on_connected")();
             }
             // 接收数据
             do_read();
@@ -128,9 +128,9 @@ void TcpTransport::handle_connect(const boost::system::error_code &err)
     {
         m_transport_status = transport::EN_CLOSE;
         std::cout << "handle_connect error, messsage: " << err.message() << std::endl;
-        if (m_on_events.has<on_connection_failed>("on_connection_failed"))
+        if (m_on_events.has<tcp::on_connection_failed>("on_connection_failed"))
         {
-            m_on_events.get<on_connection_failed>("on_connection_failed")(shared_from_this(), err);
+            m_on_events.get<tcp::on_connection_failed>("on_connection_failed")(shared_from_this(), err);
         }
     }
 }
@@ -154,9 +154,9 @@ void TcpTransport::handle_read(const boost::system::error_code &err, size_t leng
     {
         std::cout << "handle_read error, message: " << err.message() << std::endl;
         handle_close();
-        if (m_on_events.has<on_connection_lost>("on_connection_lost"))
+        if (m_on_events.has<tcp::on_connection_lost>("on_connection_lost"))
         {
-            m_on_events.get<on_connection_lost>("on_connection_lost")(shared_from_this(), err);
+            m_on_events.get<tcp::on_connection_lost>("on_connection_lost")(shared_from_this(), err);
         }
     }
 }
@@ -193,9 +193,9 @@ void TcpTransport::handle_write(const boost::system::error_code &err, size_t len
         std::cout << "handle_write error, message: " << err.message() << std::endl;
         handle_close();
 
-        if (m_on_events.has<on_connection_lost>("on_connection_lost"))
+        if (m_on_events.has<tcp::on_connection_lost>("on_connection_lost"))
         {
-            m_on_events.get<on_connection_lost>("on_connection_lost")(shared_from_this(), err);
+            m_on_events.get<tcp::on_connection_lost>("on_connection_lost")(shared_from_this(), err);
         }
     }
 }
@@ -205,9 +205,9 @@ void TcpTransport::handle_close()
     m_transport_status = transport::EN_CLOSE;
     m_socket->close();
     std::cout << "close_socket" << std::endl;
-    if (m_on_events.has<on_disconnected>("on_disconnected"))
+    if (m_on_events.has<tcp::on_disconnected>("on_disconnected"))
     {
-        m_on_events.get<on_disconnected>("on_disconnected")();
+        m_on_events.get<tcp::on_disconnected>("on_disconnected")();
     }
 }
 

@@ -12,7 +12,7 @@ class TcpTransport;
 class BaseProtocol
 {
 public:
-    BaseProtocol(boost::asio::io_context &ioc, boost::shared_ptr<TcpTransport> transport);
+    BaseProtocol(boost::shared_ptr<boost::asio::io_context> ioc, boost::shared_ptr<TcpTransport> transport);
 
     virtual ~BaseProtocol();
 
@@ -67,7 +67,7 @@ protected:
     virtual void on_raw_data_received(const std::string &data);
 
 protected:
-    boost::asio::io_context &m_ioc;
+    boost::shared_ptr<boost::asio::io_context> m_ioc;
     boost::shared_ptr<TcpTransport> m_transport;
 };
 

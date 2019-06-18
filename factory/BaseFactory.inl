@@ -11,7 +11,7 @@
 template<class ProtocolType>
 boost::shared_ptr<ProtocolType> BaseFactory::connect_tcp(const std::string &ip, int32_t port, time_t timeout, size_t block_size)
 {
-    boost::asio::ip::tcp::resolver resolver(this->m_ioc);
+    boost::asio::ip::tcp::resolver resolver(*this->m_ioc);
     auto endpoints = resolver.resolve(ip, std::to_string(port));
 
     return build_protocol<ProtocolType>(endpoints, timeout, block_size);
@@ -21,9 +21,8 @@ template<class ProtocolType>
 boost::shared_ptr<ProtocolType> BaseFactory::build_protocol(
         const boost::asio::ip::tcp::resolver::results_type &endpoints, time_t timeout ,size_t block_size)
 {
-    auto transport = boost::make_shared<TcpTransport>(this->m_ioc,
-                                                      boost::make_shared<boost::asio::ip::tcp::socket>(this->m_ioc),
-                                                      timeout, block_size);
+    auto socket = boost::make_shared<boost::asio::ip::tcp::socket>(*this->m_ioc);
+    auto transport = boost::make_shared<TcpTransport>(this->m_ioc, socket, timeout, block_size);
     auto protocol = boost::make_shared<ProtocolType>(this->m_ioc, transport);
 
     this->__build_protocol(transport, protocol);

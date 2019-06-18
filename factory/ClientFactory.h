@@ -15,7 +15,7 @@ class ClientFactory : public BaseFactory
 {
 public:
 
-    ClientFactory(boost::asio::io_context &ioc);
+    ClientFactory(boost::shared_ptr<boost::asio::io_context> ioc);
 
     virtual ~ClientFactory();
 protected:

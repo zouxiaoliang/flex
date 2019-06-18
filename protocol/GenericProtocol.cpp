@@ -10,9 +10,9 @@
 
 #include <iostream>
 
-GenericProtocol::GenericProtocol(boost::asio::io_context &ioc, boost::shared_ptr<TcpTransport> transport):
+GenericProtocol::GenericProtocol(boost::shared_ptr<boost::asio::io_context> ioc, boost::shared_ptr<TcpTransport> transport):
     BaseProtocol(ioc, transport),
-    m_timer(ioc)
+    m_timer(*ioc)
 {
     m_error_count = 0;
     m_recv_count = 0;

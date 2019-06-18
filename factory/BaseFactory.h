@@ -18,7 +18,7 @@ class TcpTransport;
 class BaseFactory {
 public:
 
-    explicit BaseFactory(boost::asio::io_context &ioc);
+    explicit BaseFactory(boost::shared_ptr<boost::asio::io_context> ioc);
 
     virtual ~BaseFactory();
 
@@ -66,8 +66,7 @@ protected:
     virtual void __build_protocol(boost::shared_ptr<TcpTransport> connector, boost::shared_ptr<BaseProtocol> protocol) {}
 
 protected:
-
-    boost::asio::io_context &m_ioc;
+    boost::shared_ptr<boost::asio::io_context> m_ioc;
 };
 
 #include "BaseFactory.inl"

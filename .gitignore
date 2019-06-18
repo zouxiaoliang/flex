@@ -32,3 +32,6 @@
 *.app
 *.user
 /Icon
+.idea
+.DS_Store
+cmake-build-debug

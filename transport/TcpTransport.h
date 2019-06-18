@@ -14,6 +14,9 @@
 #include "utils/sgi_plus.h"
 
 class TcpTransport;
+
+namespace tcp {
+
 /**
  * @brief CallBack 可变类型回调函数
  */
@@ -27,10 +30,12 @@ typedef KeyVariant<
     boost::function<void()>,
     boost::function<void(const std::string &)>,
     boost::function<void(boost::shared_ptr<TcpTransport>, const boost::system::error_code&)>
-> TVariantCallBack;
+> TOnEvent;
+
+}
 
 class TcpTransport : public boost::enable_shared_from_this<TcpTransport> ,
-        public BaseTransport<boost::asio::ip::tcp::resolver::results_type, TVariantCallBack>
+        public BaseTransport<boost::asio::ip::tcp::resolver::results_type, tcp::TOnEvent>
 {
 public:
     enum
@@ -41,7 +46,7 @@ public:
 
 public:
     TcpTransport(
-            boost::asio::io_context& ioc,
+            boost::shared_ptr<boost::asio::io_context> ioc,
             boost::shared_ptr<boost::asio::ip::tcp::socket> socket,
             time_t timeout,
             size_t block_size

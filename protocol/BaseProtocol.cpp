@@ -10,7 +10,7 @@
 
 #include <iostream>
 
-BaseProtocol::BaseProtocol(boost::asio::io_context &ioc, boost::shared_ptr<TcpTransport> transport) :
+BaseProtocol::BaseProtocol(boost::shared_ptr<boost::asio::io_context> ioc, boost::shared_ptr<TcpTransport> transport) :
     m_ioc(ioc),
     m_transport(transport)
 {

@@ -1,6 +1,6 @@
 #include "ClientFactory.h"
 
-ClientFactory::ClientFactory(boost::asio::io_context &ioc):
+ClientFactory::ClientFactory(boost::shared_ptr<boost::asio::io_context> ioc):
     BaseFactory(ioc)
 {
 
@@ -13,8 +13,8 @@ ClientFactory::~ClientFactory()
 
 void ClientFactory::__build_protocol(boost::shared_ptr<TcpTransport> connector, boost::shared_ptr<BaseProtocol> protocol)
 {
-    connector->register_callback<on_connection_lost>("on_connection_lost", boost::bind(&ClientFactory::connection_lost, this, _1, _2));
-    connector->register_callback<on_connection_failed>("on_connection_failed", boost::bind(&ClientFactory::connection_failed, this, _1, _2));
+    connector->register_callback<tcp::on_connection_lost>("on_connection_lost", boost::bind(&ClientFactory::connection_lost, this, _1, _2));
+    connector->register_callback<tcp::on_connection_failed>("on_connection_failed", boost::bind(&ClientFactory::connection_failed, this, _1, _2));
 }
 
 void ClientFactory::connection_lost(boost::shared_ptr<TcpTransport> connector, const boost::system::error_code &err)

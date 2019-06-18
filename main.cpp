@@ -8,13 +8,13 @@
 #include "protocol/GenericProtocol.h"
 #include "transport/TcpTransport.h"
 #include "factory/ClientFactory.h"
-#include "TcpListener.h"
+#include "listener/TcpListener.h"
 
 using namespace std;
 
 void start_client(int32_t port, uint64_t count, int64_t client_count)
 {
-    boost::asio::io_context ioc;
+    auto ioc = boost::make_shared<boost::asio::io_context>();
 
     std::string host = "10.11.1.147";
 
@@ -61,7 +61,7 @@ void start_client(int32_t port, uint64_t count, int64_t client_count)
 
     char buffer[2048] = {};
 
-    std::thread thr_ioc([&ioc]() {ioc.run();});
+    std::thread thr_ioc([&ioc]() {ioc->run();});
     std::thread thr_writer([&]() {
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wmissing-noreturn"
@@ -106,7 +106,7 @@ void start_server()
 
     uint16_t port = 8000;
     boost::asio::ip::address address = boost::asio::ip::make_address("0.0.0.0");
-    auto client_factory = boost::make_shared<ClientFactory>(*ioc.get());
+    auto client_factory = boost::make_shared<ClientFactory>(ioc);
 
     // service
     TcpListener listener;

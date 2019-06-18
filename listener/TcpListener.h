@@ -24,7 +24,7 @@ public:
      * @brief listen 启动监听，并且异步等待连接请求
      * @param ioc
      * @param endpoint 监听地址
-     * @param factory  protocol工厂对象
+     * @param factory protocol工厂对象
      */
     template <class ProtocolType>
     void listen(boost::shared_ptr<boost::asio::io_context> ioc, const boost::asio::ip::tcp::endpoint& endpoint, boost::shared_ptr<BaseFactory> factory);

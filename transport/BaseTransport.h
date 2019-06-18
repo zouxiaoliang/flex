@@ -27,10 +27,10 @@ template<class EndpointType, class OnEvent>
 class BaseTransport
 {
 public:
-    BaseTransport(boost::asio::io_context &ioc,
+    BaseTransport(boost::shared_ptr<boost::asio::io_context> ioc,
                   time_t timeout,
                   size_t block_size) :
-        m_strand(ioc), m_timeout(timeout), m_block_size(block_size), m_transport_status(transport::EN_CLOSE) {}
+        m_strand(*ioc), m_timeout(timeout), m_block_size(block_size), m_transport_status(transport::EN_CLOSE) {}
 
     virtual ~BaseTransport() = default;
 
