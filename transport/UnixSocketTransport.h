@@ -2,6 +2,7 @@
 #define UNIXSOCKETTRANSPORT_H
 
 #include <boost/asio.hpp>
+#include <boost/enable_shared_from_this.hpp>
 
 #include "BaseTransport.h"
 
@@ -10,7 +11,7 @@
 
 class UnixSocketTransport;
 
-namespace unix {
+namespace unix_socket {
 
 /**
  * @brief CallBack 可变类型回调函数
@@ -29,8 +30,8 @@ typedef KeyVariant<
 
 }
 
-class UnixSocketTransport :
-        public BaseTransport<boost::asio::local::stream_protocol::socket, unix::TOnEvent>
+class UnixSocketTransport : public boost::enable_shared_from_this<UnixSocketTransport>,
+        public BaseTransport<boost::asio::local::stream_protocol::socket, unix_socket::TOnEvent>
 {
 public:
     /**
