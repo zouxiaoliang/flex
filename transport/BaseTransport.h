@@ -100,7 +100,7 @@ public:
             return false;
         }
         std::cout << "register callback name: " << name << std::endl;
-        m_on_events.template set<T>(name, callback);
+        m_on_events.set(name, callback);
         return true;
     }
 
