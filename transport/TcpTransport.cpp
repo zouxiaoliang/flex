@@ -66,6 +66,8 @@ void TcpTransport::connection_made()
 
     m_socket->set_option(no_delay, set_option_err);
     m_transport_status = transport::EN_OK;
+    m_local_endpoint = m_socket->local_endpoint();
+    m_remote_endpoint = m_socket->remote_endpoint();
     // 接收数据
     do_read();
 }
@@ -102,7 +104,7 @@ void TcpTransport::write(const std::string &data, boost::function<void(const std
 
 boost::asio::ip::tcp::endpoint TcpTransport::endpoint(int32_t type)
 {
-    return EN_LOCAL_ENDPOINT == type ? m_socket->local_endpoint() : m_socket->remote_endpoint();
+    return EN_LOCAL_ENDPOINT == type ? m_local_endpoint : m_remote_endpoint;
 }
 
 void TcpTransport::handle_connect(const boost::system::error_code &err)
@@ -113,6 +115,8 @@ void TcpTransport::handle_connect(const boost::system::error_code &err)
         boost::asio::ip::tcp::no_delay no_delay(true);
 
         m_socket->set_option(no_delay, set_option_err);
+        m_local_endpoint = m_socket->local_endpoint();
+        m_remote_endpoint = m_socket->remote_endpoint();
         if (!set_option_err)
         {
             m_transport_status = transport::EN_OK;

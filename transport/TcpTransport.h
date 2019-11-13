@@ -153,6 +153,8 @@ private:
 private:
     boost::shared_ptr<boost::asio::ip::tcp::socket> m_socket;
     boost::asio::ip::tcp::resolver::results_type m_endpoints;
+    boost::asio::ip::tcp::endpoint m_local_endpoint;
+    boost::asio::ip::tcp::endpoint m_remote_endpoint;
 
     char *m_read_data;
     size_t m_read_data_length;
