@@ -11,6 +11,10 @@
 #include "listener/TcpListener.h"
 
 using namespace std;
+#ifndef PRIu64
+#  define __PRI_64_LENGTH_MODIFIER__ "ll"
+#  define PRIu64        __PRI_64_LENGTH_MODIFIER__ "u"
+#endif
 
 void start_client(int32_t port, uint64_t count, int64_t client_count)
 {
