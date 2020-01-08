@@ -43,7 +43,7 @@ public:
         return boost::get<T>(iter->second);
     }
 
-    void remove(const char *name){
+    void remove(const char *name) {
         auto iter = m_variants.find(name);
         if (m_variants.end() != iter)
         {

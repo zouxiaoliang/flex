@@ -5,11 +5,16 @@ project(flexible-network)
 set(CMAKE_CXX_STANDARD 11)
 
 option(debug "build debug version" ON)
-set(CMAKE_C_FLAGS "-fPIC -Wall")
-set(CMAKE_CXX_FLAGS "-fPIC -Wall")
+
+set(CMAKE_C_FLAGS "-fPIC -Wall -pthread")
+set(CMAKE_CXX_FLAGS "-fPIC -Wall -pthread -Wno-unused")
 if (debug)
-    set(CMAKE_CXX_FLAGS " -g3 -ggdb")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g3 -ggdb")
+else()
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Os")
 endif()
+
+message(STATUS "${PROJECT_NAME} cmake_cxx_flags: ${CMAKE_CXX_FLAGS}")
 
 INCLUDE_DIRECTORIES(/usr/local/include)
 LINK_LIBRARIES(/usr/local/lib)
