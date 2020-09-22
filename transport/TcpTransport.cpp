@@ -24,6 +24,8 @@ TcpTransport::~TcpTransport()
     }
 }
 
+void TcpTransport::status(int32_t status) { m_transport_status = status; }
+
 void TcpTransport::connect(const boost::asio::ip::tcp::resolver::results_type &endpoints)
 {
     m_endpoints = endpoints;
@@ -190,6 +192,14 @@ void TcpTransport::handle_write(const boost::system::error_code &err, size_t len
         {
             // std::cout << "pre buffer size: " << m_messages.front()->size() << std::endl;
             do_write();
+        }
+        else
+        {
+            // 所有缓冲区的消息已经处理完毕，需要通知外部继续处理
+            if (m_on_events.has<tcp::on_write_completed>("on_write_completed"))
+            {
+                m_on_events.get<tcp::on_write_completed>("on_write_completed")();
+            }
         }
     }
     else

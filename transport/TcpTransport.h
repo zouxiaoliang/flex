@@ -25,6 +25,7 @@ typedef boost::function<void ()> on_disconnected;
 typedef boost::function<void(const std::string &)> on_data_recevied;
 typedef boost::function<void(boost::shared_ptr<TcpTransport>, const boost::system::error_code&)> on_connection_lost;
 typedef boost::function<void(boost::shared_ptr<TcpTransport>, const boost::system::error_code&)> on_connection_failed;
+typedef boost::function<void ()> on_write_completed;
 
 typedef KeyVariant<
     boost::function<void()>,
@@ -69,7 +70,7 @@ public:
      * @brief status 设置当前transport的状态
      * @param status
      */
-    void status(int32_t status){m_transport_status = status;}
+    void status(int32_t status);
 
     /**
      * @brief start 启动通讯管道
