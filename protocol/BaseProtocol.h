@@ -53,6 +53,11 @@ protected:
      */
     virtual void on_write_error(const std::string &data);
 
+    /**
+     * @brief on_write_completed
+     */
+    virtual void on_write_completed();
+
 protected:
     /**
      * @brief on_message_received 数据接收回调
