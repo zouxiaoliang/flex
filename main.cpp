@@ -28,7 +28,7 @@ void start_client(int32_t port, uint64_t count, int64_t client_count)
     std::vector<boost::shared_ptr<BaseProtocol>> clients;
     for (int var = 0; var < client_count; ++ var)
     {
-        auto client_instance = client_factory->connect_tcp<GenericProtocol>(host.c_str(), port, 10, 1024);
+        auto client_instance = client_factory->connect_tcp<GenericProtocol, TcpTransport>(host.c_str(), port, 10, 1024);
         if (client_instance)
             clients.push_back(client_instance);
     }

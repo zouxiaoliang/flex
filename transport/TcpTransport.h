@@ -29,6 +29,7 @@ typedef boost::function<void ()> on_write_completed;
 
 typedef KeyVariant<
     boost::function<void()>,
+    boost::function<void (bool)>,
     boost::function<void(const std::string &)>,
     boost::function<void(boost::shared_ptr<TcpTransport>, const boost::system::error_code&)>
 > TOnEvent;
@@ -109,7 +110,7 @@ public:
      * @return
      */
     boost::asio::ip::tcp::endpoint endpoint(int32_t type = EN_LOCAL_ENDPOINT);
-private:
+protected:
 
     /**
      * @brief handle_connect 连接处理时间
@@ -151,7 +152,7 @@ private:
      */
     void check_deadline();
 
-private:
+protected:
     boost::shared_ptr<boost::asio::ip::tcp::socket> m_socket;
     boost::asio::ip::tcp::resolver::results_type m_endpoints;
     boost::asio::ip::tcp::endpoint m_local_endpoint;

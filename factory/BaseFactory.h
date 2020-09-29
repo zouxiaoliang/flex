@@ -32,7 +32,7 @@ public:
      * @param block_size 消息块大小
      * @return 协议处理对象
      */
-    template<class ProtocolType>
+    template<class ProtocolType, class TransportType>
     boost::shared_ptr<ProtocolType> connect_tcp(const std::string &ip, int32_t port, time_t timeout, size_t block_size);
 
 
@@ -53,7 +53,7 @@ public:
      * @param block_size 消息块大小
      * @return 协议处理对象
      */
-    template<class ProtocolType>
+    template<class ProtocolType, class TransportType>
     boost::shared_ptr<ProtocolType> build_protocol(const boost::asio::ip::tcp::resolver::results_type &endpoints,
                                                    time_t timeout, size_t block_size);
 
