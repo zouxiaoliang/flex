@@ -103,7 +103,7 @@ public:
     /**
      * @brief write 数据写入接口
      */
-    void write(const std::string &data, boost::function<void(const std::string &)> handle_error);
+    virtual void write(const std::string &data, boost::function<void(const std::string &)> handle_error);
 
     /**
      * @brief endpoint 获取连接地址信息
