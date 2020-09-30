@@ -4,6 +4,7 @@
 #include <boost/asio.hpp>
 #include <boost/make_shared.hpp>
 #include <boost/thread.hpp>
+#include <boost/algorithm/string.hpp>
 
 #include "protocol/GenericProtocol.h"
 #include "transport/TcpTransport.h"
@@ -15,6 +16,21 @@ using namespace std;
 #  define __PRI_64_LENGTH_MODIFIER__ "ll"
 #  define PRIu64        __PRI_64_LENGTH_MODIFIER__ "u"
 #endif
+
+void sleep(long sec)
+{
+    boost::thread::sleep(boost::get_system_time() + boost::posix_time::seconds(sec));
+}
+
+void msleep(long millisec)
+{
+    boost::thread::sleep(boost::get_system_time() + boost::posix_time::millisec(millisec));
+}
+
+boost::system_time future(long sec)
+{
+    return boost::get_system_time() + boost::posix_time::seconds(sec);
+}
 
 void start_client(int32_t port, uint64_t count, int64_t client_count)
 {
@@ -126,11 +142,11 @@ void start_server()
 int main(int argc, char *argv[])
 {
     cout << "Hello World!" << endl;
-    if (argc >= 2 && 0 == strcasecmp(argv[1], "server"))
+    if (argc >= 2 && boost::iequals(argv[1], "server"))
     {
         start_server();
     }
-    else if (argc >= 5 && 0 == strcasecmp(argv[1], "client"))
+    else if (argc >= 5 && boost::iequals(argv[1], "client"))
     {
         start_client(::atoi(argv[2]), ::strtoull(argv[3], &argv[3]+strlen(argv[3]), 10), ::atoi(argv[4]));
     }

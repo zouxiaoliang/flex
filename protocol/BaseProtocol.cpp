@@ -6,8 +6,6 @@
 #include <boost/chrono/duration.hpp>
 #include <boost/bind.hpp>
 
-#include <arpa/inet.h>
-
 #include <iostream>
 
 BaseProtocol::BaseProtocol(boost::shared_ptr<boost::asio::io_context> ioc, boost::shared_ptr<TcpTransport> transport) :
