@@ -82,7 +82,7 @@ public:
 
     /**
      * @brief set_on_read
-     * @param on_data_recevied
+     * @param on_read
      */
     void set_on_read(boost::function<void(const std::string &data)> on_read) { m_on_read = on_read; }
 

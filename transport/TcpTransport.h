@@ -56,18 +56,6 @@ public:
     virtual ~TcpTransport();
 
     /**
-     * @brief set_protocol 设置协议处理对象
-     * @param protocol 协议
-     */
-    void set_protocol(boost::shared_ptr<BaseProtocol> protocol);
-
-    /**
-     * @brief protocol 获取协议对象
-     * @return 协议对象指针
-     */
-    boost::shared_ptr<BaseProtocol> protocol();
-
-    /**
      * @brief status 设置当前transport的状态
      * @param status
      */
