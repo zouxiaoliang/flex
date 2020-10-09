@@ -16,7 +16,7 @@ using namespace std;
 #  define __PRI_64_LENGTH_MODIFIER__ "ll"
 #  define PRIu64        __PRI_64_LENGTH_MODIFIER__ "u"
 #endif
-
+namespace fn {
 void sleep(long sec)
 {
     boost::thread::sleep(boost::get_system_time() + boost::posix_time::seconds(sec));
@@ -25,6 +25,7 @@ void sleep(long sec)
 void msleep(long millisec)
 {
     boost::thread::sleep(boost::get_system_time() + boost::posix_time::millisec(millisec));
+}
 }
 
 boost::system_time future(long sec)
@@ -91,7 +92,7 @@ void start_client(int32_t port, uint64_t count, int64_t client_count)
             {
                 if (transport::EN_OK != p->transport_status())
                 {
-                    ::sleep(1);
+                    fn::sleep(1);
                     continue;
                 }
 
@@ -101,7 +102,7 @@ void start_client(int32_t port, uint64_t count, int64_t client_count)
             }
             if ((var % count) == 0)
             {
-                ::sleep(1);
+                fn::sleep(1);
                 std::cout << "send count: " << var << " * " << client_count << std::endl;
             }
             ++ var;
