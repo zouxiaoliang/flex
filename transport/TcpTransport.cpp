@@ -78,6 +78,7 @@ void TcpTransport::write(const std::string &data, boost::function<void(const std
 {
     boost::asio::post(m_strand, [this, data, handle_error]()
     {
+        // 检查是否有数据正在发送，如果队列中存在数据，则表示有数据正在发送
         bool trigger = !m_messages.empty();
 
         // 通讯状态OK且缓存队列未满，将消息加入缓存队列
@@ -99,6 +100,22 @@ void TcpTransport::write(const std::string &data, boost::function<void(const std
             if (handle_error)
             {
                 handle_error(data);
+            }
+        }
+    });
+}
+
+void TcpTransport::flush()
+{
+    boost::asio::post(m_strand, [this]() {
+        // 检查是否有数据正在发送，如果队列中存在数据，则表示有数据正在发送
+
+        if (m_messages.empty())
+        {
+            // 所有缓冲区的消息已经处理完毕，需要通知外部继续处理
+            if (m_on_events.has<tcp::on_write_completed>("on_write_completed"))
+            {
+                m_on_events.get<tcp::on_write_completed>("on_write_completed")();
             }
         }
     });

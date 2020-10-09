@@ -91,7 +91,12 @@ public:
     /**
      * @brief write 数据写入接口
      */
-    virtual void write(const std::string &data, boost::function<void(const std::string &)> handle_error);
+    void write(const std::string &data, boost::function<void(const std::string &)> handle_error);
+
+    /**
+     * @brief flush
+     */
+    void flush();
 
     /**
      * @brief endpoint 获取连接地址信息

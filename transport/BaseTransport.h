@@ -81,6 +81,11 @@ public:
     void write(const std::string &data, boost::function<void(const std::string&)> handle_error = nullptr) {}
 
     /**
+     * @brief flush
+     */
+    virtual void flush() {}
+
+    /**
      * @brief set_on_read
      * @param on_read
      */
