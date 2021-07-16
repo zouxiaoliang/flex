@@ -4,9 +4,11 @@
 #include <boost/make_shared.hpp>
 #include <boost/chrono.hpp>
 #include <boost/chrono/duration.hpp>
-#include <boost/bind.hpp>
+#include <boost/bind/bind.hpp>
 
 #include <iostream>
+
+using namespace boost::placeholders;
 
 BaseProtocol::BaseProtocol(boost::shared_ptr<boost::asio::io_context> ioc, boost::shared_ptr<TcpTransport> transport) :
     m_ioc(ioc),

@@ -42,18 +42,6 @@ aux_source_directory(protocol PROTOCOL)
 aux_source_directory(factory FACTORY)
 aux_source_directory(listener LISTENER)
 
-add_executable(${PROJECT_NAME}-client "main.cpp" ${TRANSPORT} ${PROTOCOL} ${FACTORY} ${LISTENER})
-
-if (UNIX)
-    if (APPLE)
-        target_link_libraries(${PROJECT_NAME}-client ${Boost_LIBRARIES} pthread)
-    else (APPLE)
-        target_link_libraries(${PROJECT_NAME}-client ${Boost_LIBRARIES} pthread rt)
-    endif (APPLE)
-else()
-    target_link_libraries(${PROJECT_NAME}-client ${Boost_LIBRARIES})
-endif(UNIX)
-
 add_library(${PROJECT_NAME}-shared SHARED ${TRANSPORT} ${PROTOCOL} ${FACTORY} ${LISTENER})
 
 set_target_properties(${PROJECT_NAME}-shared PROPERTIES OUTPUT_NAME ${PROJECT_NAME})
@@ -67,6 +55,9 @@ if (UNIX)
 else()
     target_link_libraries(${PROJECT_NAME}-shared ${Boost_LIBRARIES})
 endif(UNIX)
+
+add_executable(${PROJECT_NAME}-client "main.cpp")
+target_link_libraries(${PROJECT_NAME}-client ${PROJECT_NAME}-shared)
 
 SET(LIBRARY_OUTPUT_PATH lib)
 install(TARGETS ${PROJECT_NAME}-shared LIBRARY DESTINATION lib)

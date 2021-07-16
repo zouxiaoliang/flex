@@ -2,9 +2,11 @@
 
 #include <iostream>
 
-#include <boost/bind.hpp>
+#include <boost/bind/bind.hpp>
 #include <boost/thread.hpp>
 #include <boost/make_shared.hpp>
+
+using namespace boost::placeholders;
 
 TcpTransport::TcpTransport(boost::shared_ptr<boost::asio::io_context> ioc, boost::shared_ptr<boost::asio::ip::tcp::socket> socket, time_t timeout, size_t block_size) :
     BaseTransport<boost::asio::ip::tcp::resolver::results_type, tcp::TOnEvent> (ioc, timeout, block_size),
