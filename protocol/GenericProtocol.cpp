@@ -69,7 +69,7 @@ void GenericProtocol::on_connected()
     m_buffer.clear();
     // 连接成功，需要做的事情
     // 发送登陆请求
-    this->write("hello world");
+    // this->write("hello world");
 }
 
 void GenericProtocol::on_disconnected()
