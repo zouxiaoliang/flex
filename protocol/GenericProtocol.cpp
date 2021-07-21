@@ -113,9 +113,12 @@ void GenericProtocol::on_write_error(const std::string &data)
 
 void GenericProtocol::print()
 {
-    std::cout << "time:" << ::time(0) << std::endl;
-    std::cout << "      error_count: " << m_error_count << std::endl;
-    std::cout << "      recv_count: " << m_recv_count << std::endl;
+    if (0 != m_error_count || 0 != m_recv_count)
+    {
+        std::cout << "time:" << ::time(0) << std::endl;
+        std::cout << "      error_count: " << m_error_count << std::endl;
+        std::cout << "      recv_count: " << m_recv_count << std::endl;
+    }
 
     m_timer.expires_from_now(boost::posix_time::seconds(5));
     m_timer.async_wait(boost::bind(&GenericProtocol::print, this));
