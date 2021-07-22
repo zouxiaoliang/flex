@@ -11,7 +11,7 @@
  */
 class GenericProtocol : public BaseProtocol
 {
-private:
+protected:
     struct Head
     {
         uint32_t version;
