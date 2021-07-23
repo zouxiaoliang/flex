@@ -25,7 +25,7 @@ protected:
      * @param transport
      * @param protocol
      */
-    virtual void __build_protocol(boost::shared_ptr<TcpTransport> transport, boost::shared_ptr<BaseProtocol> protocol);
+    virtual void __build_protocol(boost::shared_ptr<BaseTransport> transport, boost::shared_ptr<BaseProtocol> protocol);
 public:
 
     /**
@@ -33,14 +33,14 @@ public:
      * @param connector 连接器
      * @param err 错误码
      */
-    virtual void connection_lost(boost::shared_ptr<TcpTransport> connector, const boost::system::error_code &err);
+    virtual void connection_lost(boost::shared_ptr<BaseTransport> connector, const boost::system::error_code &err);
 
     /**
      * @brief connection_failed 当建立连接失败后，进行处理
      * @param connector 连接器
      * @param err 错误码
      */
-    virtual void connection_failed(boost::shared_ptr<TcpTransport> connector, const boost::system::error_code &err);
+    virtual void connection_failed(boost::shared_ptr<BaseTransport> connector, const boost::system::error_code &err);
 };
 
 #endif // CLIENTFACTORY_H

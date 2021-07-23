@@ -37,7 +37,7 @@ typedef KeyVariant<
 }
 
 class TcpTransport : public boost::enable_shared_from_this<TcpTransport> ,
-        public BaseTransport<boost::asio::ip::tcp::resolver::results_type, tcp::TOnEvent>
+        public BaseTransport
 {
 public:
     enum
@@ -63,9 +63,9 @@ public:
 
     /**
      * @brief start 启动通讯管道
-     * @param endpoint
+     * @param m_resolver
      */
-    void connect(const boost::asio::ip::tcp::resolver::results_type& endpoints);
+    void connect(const std::string& path);
 
     /**
      * @brief Transport::connect
@@ -147,6 +147,7 @@ protected:
 
 protected:
     boost::shared_ptr<boost::asio::ip::tcp::socket> m_socket;
+    boost::asio::ip::tcp::resolver m_resolver;
     boost::asio::ip::tcp::resolver::results_type m_endpoints;
     boost::asio::ip::tcp::endpoint m_local_endpoint;
     boost::asio::ip::tcp::endpoint m_remote_endpoint;

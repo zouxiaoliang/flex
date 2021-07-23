@@ -5,15 +5,17 @@
 #include <boost/bind/bind.hpp>
 #include <boost/thread.hpp>
 #include <boost/make_shared.hpp>
+#include <boost/regex.hpp>
 
 using namespace boost::placeholders;
 
 TcpTransport::TcpTransport(boost::shared_ptr<boost::asio::io_context> ioc, boost::shared_ptr<boost::asio::ip::tcp::socket> socket, time_t timeout, size_t block_size) :
-    BaseTransport<boost::asio::ip::tcp::resolver::results_type, tcp::TOnEvent> (ioc, timeout, block_size),
-    m_socket(socket),
-    m_read_data(new char[block_size]),
-    m_read_data_length(block_size),
-    m_messages()
+    BaseTransport(ioc, timeout, block_size),
+      m_socket(socket),
+      m_resolver(*ioc),
+      m_read_data(new char[block_size]),
+      m_read_data_length(block_size),
+      m_messages()
 {
 
 }
@@ -28,9 +30,19 @@ TcpTransport::~TcpTransport()
 
 void TcpTransport::status(int32_t status) { m_transport_status = status; }
 
-void TcpTransport::connect(const boost::asio::ip::tcp::resolver::results_type &endpoints)
+void TcpTransport::connect(const std::string &path)
 {
-    m_endpoints = endpoints;
+    // TODO: 解析字符串
+    boost::system::error_code ec;
+    m_endpoints = m_resolver.resolve(path, ec);
+    if (ec)
+    {   if (m_fn_handle_connection_failed)
+        {
+            m_fn_handle_connection_failed(shared_from_this(), ec);
+        }
+
+        return;
+    }
 
     connect();
 }
@@ -72,6 +84,7 @@ void TcpTransport::connection_made()
     m_transport_status = transport::EN_OK;
     m_local_endpoint = m_socket->local_endpoint();
     m_remote_endpoint = m_socket->remote_endpoint();
+
     // 接收数据
     do_read();
 }
@@ -115,9 +128,9 @@ void TcpTransport::flush()
         if (m_messages.empty())
         {
             // 所有缓冲区的消息已经处理完毕，需要通知外部继续处理
-            if (m_on_events.has<tcp::on_write_completed>("on_write_completed"))
+            if (m_fn_handle_write_completed)
             {
-                m_on_events.get<tcp::on_write_completed>("on_write_completed")();
+                m_fn_handle_write_completed();
             }
         }
     });
@@ -141,10 +154,12 @@ void TcpTransport::handle_connect(const boost::system::error_code &err)
         if (!set_option_err)
         {
             m_transport_status = transport::EN_OK;
-            if (m_on_events.has<tcp::on_connected>("on_connected"))
+
+            if (m_fn_handle_connected)
             {
-                m_on_events.get<tcp::on_connected>("on_connected")();
+                m_fn_handle_connected();
             }
+
             // 接收数据
             do_read();
         }
@@ -153,9 +168,9 @@ void TcpTransport::handle_connect(const boost::system::error_code &err)
     {
         m_transport_status = transport::EN_CLOSE;
         std::cout << "handle_connect error, messsage: " << err.message() << std::endl;
-        if (m_on_events.has<tcp::on_connection_failed>("on_connection_failed"))
+        if (m_fn_handle_connection_failed)
         {
-            m_on_events.get<tcp::on_connection_failed>("on_connection_failed")(shared_from_this(), err);
+            m_fn_handle_connection_failed(shared_from_this(), err);
         }
     }
 }
@@ -167,9 +182,9 @@ void TcpTransport::handle_read(const boost::system::error_code &err, size_t leng
         // std::cout << "handle read: " << length << std::endl;
 
         // 处理接收的数据
-        if (m_on_read)
+        if (m_fn_handle_data_recevied)
         {
-            m_on_read(std::string(m_read_data, length));
+            m_fn_handle_data_recevied(std::string(m_read_data, length));
         }
 
         // 接收数据
@@ -179,9 +194,10 @@ void TcpTransport::handle_read(const boost::system::error_code &err, size_t leng
     {
         std::cout << "handle_read error, message: " << err.message() << std::endl;
         handle_close();
-        if (m_on_events.has<tcp::on_connection_lost>("on_connection_lost"))
+
+        if (m_fn_handle_connection_lost)
         {
-            m_on_events.get<tcp::on_connection_lost>("on_connection_lost")(shared_from_this(), err);
+            m_fn_handle_connection_lost(shared_from_this(), err);
         }
     }
 }
@@ -215,9 +231,9 @@ void TcpTransport::handle_write(const boost::system::error_code &err, size_t len
         else
         {
             // 所有缓冲区的消息已经处理完毕，需要通知外部继续处理
-            if (m_on_events.has<tcp::on_write_completed>("on_write_completed"))
+            if(m_fn_handle_write_completed)
             {
-                m_on_events.get<tcp::on_write_completed>("on_write_completed")();
+                m_fn_handle_write_completed();
             }
         }
     }
@@ -226,9 +242,9 @@ void TcpTransport::handle_write(const boost::system::error_code &err, size_t len
         std::cout << "handle_write error, message: " << err.message() << std::endl;
         handle_close();
 
-        if (m_on_events.has<tcp::on_connection_lost>("on_connection_lost"))
+        if (m_fn_handle_connection_lost)
         {
-            m_on_events.get<tcp::on_connection_lost>("on_connection_lost")(shared_from_this(), err);
+            m_fn_handle_connection_lost(shared_from_this(), err);
         }
     }
 }
@@ -238,9 +254,9 @@ void TcpTransport::handle_close()
     m_transport_status = transport::EN_CLOSE;
     m_socket->close();
     std::cout << "close_socket" << std::endl;
-    if (m_on_events.has<tcp::on_disconnected>("on_disconnected"))
+    if (m_fn_handle_disconnected)
     {
-        m_on_events.get<tcp::on_disconnected>("on_disconnected")();
+        m_fn_handle_disconnected();
     }
 }
 

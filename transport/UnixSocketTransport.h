@@ -31,8 +31,7 @@ typedef KeyVariant<
 }
 
 class UnixSocketTransport : public boost::enable_shared_from_this<UnixSocketTransport>,
-        public BaseTransport<boost::asio::local::stream_protocol::socket, unix_socket::TOnEvent>
-{
+                            public BaseTransport {
 public:
     /**
      * @brief UnixSocketTransport

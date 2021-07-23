@@ -37,7 +37,7 @@ void start_client(int32_t port, uint64_t count, int64_t client_count)
 {
     auto ioc = boost::make_shared<boost::asio::io_context>();
 
-    std::string host = "10.11.1.147";
+    std::string url = "tcp://10.11.1.147:"+ std::to_string(port);
 
     auto client_factory = boost::make_shared<ClientFactory>(ioc);
 
@@ -45,7 +45,7 @@ void start_client(int32_t port, uint64_t count, int64_t client_count)
     std::vector<boost::shared_ptr<BaseProtocol>> clients;
     for (int var = 0; var < client_count; ++ var)
     {
-        auto client_instance = client_factory->connect_tcp<GenericProtocol, TcpTransport>(host.c_str(), port, 10, 1024);
+        auto client_instance = client_factory->connect_tcp<GenericProtocol, TcpTransport>(url, 10, 1024);
         if (client_instance)
             clients.push_back(client_instance);
     }

@@ -9,7 +9,7 @@
 
 class BaseProtocol;
 
-class TcpTransport;
+class BaseTransport;
 
 /**
  * @brief The CBaseFactory class
@@ -26,15 +26,14 @@ public:
 
     /**
      * @brief connect_tcp 连接服务端
-     * @param ip 服务端ip
-     * @param port 服务端端口
+     * @param url 统一资源定位符
      * @param timeout 超时时间
      * @param block_size 消息块大小
      * @return 协议处理对象
      */
-    template<class ProtocolType, class TransportType>
-    boost::shared_ptr<ProtocolType> connect_tcp(const std::string &ip, int32_t port, time_t timeout, size_t block_size);
 
+    template<class ProtocolType, class TransportType>
+    boost::shared_ptr<ProtocolType> connect_tcp(const std::string &url, time_t timeout, size_t block_size);
 
     /**
      * @brief on_accept
@@ -48,14 +47,13 @@ public:
 
     /**
      * @brief build_protocol 创建协议对象
-     * @param endpoints 对端信息
+     * @param url 连接信息
      * @param timeout 超时时间
      * @param block_size 消息块大小
      * @return 协议处理对象
      */
     template<class ProtocolType, class TransportType>
-    boost::shared_ptr<ProtocolType> build_protocol(const boost::asio::ip::tcp::resolver::results_type &endpoints,
-                                                   time_t timeout, size_t block_size);
+    boost::shared_ptr<ProtocolType> build_protocol(const std::string &url, time_t timeout, size_t block_size);
 
 protected:
 
@@ -63,7 +61,7 @@ protected:
      * @brief __build_protocol 自定义构建方法
      * @param connector
      */
-    virtual void __build_protocol(boost::shared_ptr<TcpTransport> connector, boost::shared_ptr<BaseProtocol> protocol) {}
+    virtual void __build_protocol(boost::shared_ptr<BaseTransport> connector, boost::shared_ptr<BaseProtocol> protocol) {}
 
 protected:
     boost::shared_ptr<boost::asio::io_context> m_ioc;
