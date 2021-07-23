@@ -10,3 +10,33 @@ UnixSocketTransport::~UnixSocketTransport()
 {
 
 }
+
+void UnixSocketTransport::connect(const std::string &path)
+{
+
+}
+
+void UnixSocketTransport::connect()
+{
+
+}
+
+void UnixSocketTransport::disconnect()
+{
+
+}
+
+int32_t UnixSocketTransport::status()
+{
+    return m_transport_status;
+}
+
+void UnixSocketTransport::connection_mode()
+{
+
+}
+
+void UnixSocketTransport::flush()
+{
+
+}
