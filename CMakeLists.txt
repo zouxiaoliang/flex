@@ -18,6 +18,13 @@ endif()
 
 message(STATUS "${PROJECT_NAME} cmake_cxx_flags: ${CMAKE_CXX_FLAGS}")
 
+if (CMAKE_HOST_SYSTEM_NAME MATCHES "Darwin")
+    message(STATUS "CMAKE_PREFIX_PATH: ${CMAKE_PREFIX_PATH}")
+    if (EXISTS /opt/homebrew)
+        list(APPEND CMAKE_PREFIX_PATH "/opt/homebrew/")
+    endif()
+endif()
+
 if (CMAKE_SYSTEM_NAME MATCHES "Linux")
     INCLUDE_DIRECTORIES(/usr/local/include)
     LINK_LIBRARIES(/usr/local/lib)
