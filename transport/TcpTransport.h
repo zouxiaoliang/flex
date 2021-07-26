@@ -119,7 +119,6 @@ public:
     /**
      * @brief write 数据写入接口，针对特定的消息如果发送失败需要特殊处理，则使用该接口
      * @brief handle_error 数据写入失败的处理函数
-     * @bug 当前接口并不能针对消息绑定对应的错误处理函数，建议不使用
      */
     void write(const std::string &data, const transport::on_write_failed &handle_error = {}) override;
 
