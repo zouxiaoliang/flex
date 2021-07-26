@@ -11,6 +11,7 @@
  */
 class GenericProtocol : public BaseProtocol
 {
+
 protected:
     struct Head
     {
@@ -19,7 +20,12 @@ protected:
     };
 
 public:
-    GenericProtocol(boost::shared_ptr<boost::asio::io_context> ioc, boost::shared_ptr<TcpTransport> transport);
+    /**
+     * @brief GenericProtocol
+     * @param ioc
+     * @param transport
+     */
+    GenericProtocol(boost::shared_ptr<boost::asio::io_context> ioc, boost::shared_ptr<BaseTransport> transport);
 
     ~GenericProtocol();
 
@@ -68,7 +74,7 @@ protected:
      * @brief on_write_error
      * @param data
      */
-    virtual void on_write_error(const std::string &data);
+    virtual void on_write_error(const std::string &data, const boost::system::error_code &ec);
 
     /**
      * @brief print
@@ -77,10 +83,10 @@ protected:
 
 protected:
 
+    /// @brief 接收缓冲区
     std::string m_buffer;
 
-    uint64_t m_error_count;
-    uint64_t m_recv_count;
+    /// @brief 定时器
     boost::asio::deadline_timer m_timer;
 };
 

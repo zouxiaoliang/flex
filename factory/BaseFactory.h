@@ -33,7 +33,7 @@ public:
      */
 
     template<class ProtocolType, class TransportType>
-    boost::shared_ptr<ProtocolType> connect_tcp(const std::string &url, time_t timeout, size_t block_size);
+    boost::shared_ptr<ProtocolType> connect(const std::string &url, time_t timeout, size_t block_size);
 
     /**
      * @brief on_accept

@@ -33,8 +33,28 @@ void TcpTransport::status(int32_t status) { m_transport_status = status; }
 void TcpTransport::connect(const std::string &path)
 {
     // TODO: 解析字符串
+    boost::smatch hosts;
+    boost::regex tcp_pattern("tcp://(.*):(\\d+)");
+    if(!boost::regex_match(path, hosts, tcp_pattern))
+    {
+        if (m_fn_handle_connection_failed)
+        {
+            m_fn_handle_connection_failed(shared_from_this(), boost::system::errc::make_error_code(boost::system::errc::bad_address));
+        }
+
+        return;
+    }
+
+    /*
+    std::cout << "host: " << std::string(hosts[0].first, hosts[0].second) << std::endl;
+    std::cout << "port: " << std::string(hosts[1].first, hosts[1].second) << std::endl;
+    std::cout << "port: " << std::string(hosts[2].first, hosts[2].second) << std::endl;
+    */
+
     boost::system::error_code ec;
-    m_endpoints = m_resolver.resolve(path, ec);
+    boost::asio::ip::tcp::resolver::query query(std::string(hosts[1].first, hosts[1].second),
+                                                std::string(hosts[2].first, hosts[2].second));
+    m_endpoints = m_resolver.resolve(query, ec);
     if (ec)
     {   if (m_fn_handle_connection_failed)
         {
@@ -89,12 +109,47 @@ void TcpTransport::connection_made()
     do_read();
 }
 
-void TcpTransport::write(const std::string &data, boost::function<void(const std::string &)> handle_error)
+void TcpTransport::write(const std::string &data)
 {
+    boost::asio::post(m_strand, [this, data]()
+    {
+      // 检查是否有数据正在发送，如果队列中存在数据，则表示有数据正在发送
+      bool writing = !m_messages.empty();
+
+      // 通讯状态OK且缓存队列未满，将消息加入缓存队列
+      if (m_messages.size() < 10000 && transport::EN_OK == status())
+      {
+          auto s = m_allocator.allocate(1);
+          m_allocator.construct(s, data);
+
+          m_messages.push_back(s);
+
+          // 如果push前队列为空，手动调用do_write消费队列数据
+          if (!writing)
+          {
+              do_write();
+          }
+      }
+      else
+      {
+          if (m_fn_handle_write_failed)
+          {
+              auto ec = boost::system::errc::make_error_code(boost::system::errc::no_buffer_space);
+              m_fn_handle_write_failed(data, ec);
+          }
+          m_flow_statistics.increase(FlowStatistics::FlowType::ERR, data.length());
+      }
+    });
+}
+
+void TcpTransport::write(const std::string &data, const transport::on_write_failed &handle_error)
+{
+    std::cout << "pre post thread id: " << boost::this_thread::get_id() << std::endl;
     boost::asio::post(m_strand, [this, data, handle_error]()
     {
+        std::cout << "post, thread id: " << boost::this_thread::get_id() << std::endl;
         // 检查是否有数据正在发送，如果队列中存在数据，则表示有数据正在发送
-        bool trigger = !m_messages.empty();
+        bool writing = !m_messages.empty();
 
         // 通讯状态OK且缓存队列未满，将消息加入缓存队列
         if (m_messages.size() < 10000 && transport::EN_OK == status())
@@ -105,17 +160,19 @@ void TcpTransport::write(const std::string &data, boost::function<void(const std
             m_messages.push_back(s);
 
             // 如果push前队列为空，手动调用do_write消费队列数据
-            if (!trigger)
+            if (!writing)
             {
-                do_write();
+                do_write(handle_error);
             }
         }
         else
         {
             if (handle_error)
             {
-                handle_error(data);
+                auto ec = boost::system::errc::make_error_code(boost::system::errc::no_buffer_space);
+                handle_error(data, ec);
             }
+            m_flow_statistics.increase(FlowStatistics::FlowType::ERR, data.length());
         }
     });
 }
@@ -149,8 +206,10 @@ void TcpTransport::handle_connect(const boost::system::error_code &err)
         boost::asio::ip::tcp::no_delay no_delay(true);
 
         m_socket->set_option(no_delay, set_option_err);
+
         m_local_endpoint = m_socket->local_endpoint();
         m_remote_endpoint = m_socket->remote_endpoint();
+
         if (!set_option_err)
         {
             m_transport_status = transport::EN_OK;
@@ -186,7 +245,7 @@ void TcpTransport::handle_read(const boost::system::error_code &err, size_t leng
         {
             m_fn_handle_data_recevied(std::string(m_read_data, length));
         }
-
+        m_flow_statistics.increase(FlowStatistics::FlowType::IN, length);
         // 接收数据
         do_read();
     }
@@ -223,6 +282,8 @@ void TcpTransport::handle_write(const boost::system::error_code &err, size_t len
             m_allocator.deallocate(s, 1);
         }
 
+        m_flow_statistics.increase(FlowStatistics::FlowType::OUT, length);
+
         if (!m_messages.empty())
         {
             // std::cout << "pre buffer size: " << m_messages.front()->size() << std::endl;
@@ -239,6 +300,14 @@ void TcpTransport::handle_write(const boost::system::error_code &err, size_t len
     }
     else
     {
+        if (!m_messages.empty())
+        {
+            if (m_fn_handle_write_failed)
+            {
+                m_fn_handle_write_failed(*m_messages.front(), err);
+            }
+        }
+
         std::cout << "handle_write error, message: " << err.message() << std::endl;
         handle_close();
 
@@ -246,6 +315,67 @@ void TcpTransport::handle_write(const boost::system::error_code &err, size_t len
         {
             m_fn_handle_connection_lost(shared_from_this(), err);
         }
+
+        m_flow_statistics.increase(FlowStatistics::FlowType::ERR, length);
+    }
+}
+
+void TcpTransport::handle_write_with_handle_error(const boost::system::error_code &err, size_t length, transport::on_write_failed handle_error)
+{
+    if (!err)
+    {
+        // std::cout << "actually sends " << length << " bytes" << std::endl;
+
+        if (!m_messages.empty())
+        {
+            // std::cout << "buffer size: " << m_messages.front()->size() <<  ", actually sends " << length << " bytes" << std::endl;
+            if (m_messages.front()->size() != length)
+            {
+                std::cout << "== error: " << m_messages.front()->size() <<  " != " << length << std::endl;
+                return ;
+            }
+            auto s = m_messages.front();
+            m_messages.pop_front();
+
+            m_allocator.destroy(s);
+            m_allocator.deallocate(s, 1);
+        }
+
+        m_flow_statistics.increase(FlowStatistics::FlowType::OUT, length);
+
+        if (!m_messages.empty())
+        {
+            // std::cout << "pre buffer size: " << m_messages.front()->size() << std::endl;
+            do_write();
+        }
+        else
+        {
+            // 所有缓冲区的消息已经处理完毕，需要通知外部继续处理
+            if(m_fn_handle_write_completed)
+            {
+                m_fn_handle_write_completed();
+            }
+        }
+    }
+    else
+    {
+        if (!m_messages.empty())
+        {
+            if (handle_error)
+            {
+                handle_error(*m_messages.front(), err);
+            }
+        }
+
+        std::cout << "handle_write error, message: " << err.message() << std::endl;
+        handle_close();
+
+        if (m_fn_handle_connection_lost)
+        {
+            m_fn_handle_connection_lost(shared_from_this(), err);
+        }
+
+        m_flow_statistics.increase(FlowStatistics::FlowType::ERR, length);
     }
 }
 
@@ -263,20 +393,29 @@ void TcpTransport::handle_close()
 void TcpTransport::do_write()
 {
     boost::asio::async_write(
-                *m_socket,
-                boost::asio::buffer(m_messages.front()->data(), m_messages.front()->size()),
-                boost::asio::transfer_at_least(m_messages.front()->size()),
-                boost::bind(&TcpTransport::handle_write, shared_from_this(), _1, _2));
+        *m_socket,
+        boost::asio::buffer(m_messages.front()->data(), m_messages.front()->size()),
+        boost::asio::transfer_at_least(m_messages.front()->size()),
+        boost::bind(&TcpTransport::handle_write, shared_from_this(), _1, _2));
+}
+
+void TcpTransport::do_write(transport::on_write_failed handle_error)
+{
+    boost::asio::async_write(
+        *m_socket,
+        boost::asio::buffer(m_messages.front()->data(), m_messages.front()->size()),
+        boost::asio::transfer_at_least(m_messages.front()->size()),
+        boost::bind(&TcpTransport::handle_write_with_handle_error, shared_from_this(), _1, _2, handle_error));
 }
 
 void TcpTransport::do_read()
 {
     boost::asio::async_read(
-                *m_socket,
-                boost::asio::buffer(m_read_data, m_read_data_length),
-                boost::asio::transfer_at_least(1),
-                boost::bind(&TcpTransport::handle_read, shared_from_this(), _1, _2)
-                );
+        *m_socket,
+        boost::asio::buffer(m_read_data, m_read_data_length),
+        boost::asio::transfer_at_least(1),
+        boost::bind(&TcpTransport::handle_read, shared_from_this(), _1, _2)
+        );
 }
 
 void TcpTransport::check_deadline()

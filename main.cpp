@@ -16,6 +16,7 @@ using namespace std;
 #  define __PRI_64_LENGTH_MODIFIER__ "ll"
 #  define PRIu64        __PRI_64_LENGTH_MODIFIER__ "u"
 #endif
+
 namespace fn {
 void sleep(long sec)
 {
@@ -33,11 +34,9 @@ boost::system_time future(long sec)
     return boost::get_system_time() + boost::posix_time::seconds(sec);
 }
 
-void start_client(int32_t port, uint64_t count, int64_t client_count)
+void start_client(const std::string &url, uint64_t count, uint64_t client_count)
 {
     auto ioc = boost::make_shared<boost::asio::io_context>();
-
-    std::string url = "tcp://10.11.1.147:"+ std::to_string(port);
 
     auto client_factory = boost::make_shared<ClientFactory>(ioc);
 
@@ -45,7 +44,7 @@ void start_client(int32_t port, uint64_t count, int64_t client_count)
     std::vector<boost::shared_ptr<BaseProtocol>> clients;
     for (int var = 0; var < client_count; ++ var)
     {
-        auto client_instance = client_factory->connect_tcp<GenericProtocol, TcpTransport>(url, 10, 1024);
+        auto client_instance = client_factory->connect<GenericProtocol, TcpTransport>(url, 10, 1024);
         if (client_instance)
             clients.push_back(client_instance);
     }
@@ -140,8 +139,23 @@ void start_server()
     ioc->run();
 }
 
+class Helloworld
+{
+public:
+    void helloworld(int i1, int i2, int i3, int i4, int i5, int i6) {
+        std::cout << i1 + i2 + i3 + i4 << std::endl;
+    }
+};
+
 int main(int argc, char *argv[])
 {
+    auto fn = boost::bind(start_client, _1, _2, _3);
+    std::cout << "sizeof(fn): " <<  sizeof(fn) << std::endl;
+
+    Helloworld h;
+    auto class_fn = boost::bind(&Helloworld::helloworld, &h, _1, _2, _3, _4, _5, 16);
+    std::cout << "sizeof(class_fn): " <<  sizeof(class_fn) << std::endl;
+
     cout << "Hello World!" << endl;
     if (argc >= 2 && boost::iequals(argv[1], "server"))
     {
@@ -149,7 +163,11 @@ int main(int argc, char *argv[])
     }
     else if (argc >= 5 && boost::iequals(argv[1], "client"))
     {
-        start_client(::atoi(argv[2]), ::strtoull(argv[3], &argv[3]+strlen(argv[3]), 10), ::atoi(argv[4]));
+        start_client(
+            argv[2],
+            ::strtoull(argv[3], &argv[3]+strlen(argv[3]) - 1, 10),
+            ::strtoull(argv[4], &argv[4]+strlen(argv[4]) - 1, 10)
+            );
     }
     else
     {

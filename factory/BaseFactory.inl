@@ -12,11 +12,8 @@ using namespace boost::placeholders;
 
 
 template<class ProtocolType, class TransportType>
-boost::shared_ptr<ProtocolType> BaseFactory::connect_tcp(const std::string &url, time_t timeout, size_t block_size)
+boost::shared_ptr<ProtocolType> BaseFactory::connect(const std::string &url, time_t timeout, size_t block_size)
 {
-    boost::system::error_code ec;
-    boost::asio::ip::tcp::resolver resolver(*this->m_ioc);
-
     return build_protocol<ProtocolType, TransportType>(url, timeout, block_size);
 }
 

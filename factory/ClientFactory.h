@@ -4,6 +4,8 @@
 
 #include "BaseFactory.h"
 
+#include <boost/function.hpp>
+
 /**
  * @brief The ClientFactory class
  * @details
@@ -13,6 +15,9 @@
  */
 class ClientFactory : public BaseFactory
 {
+public:
+    using ON_CONNECTION_LOST = boost::function<void (boost::shared_ptr<BaseTransport>, const boost::system::error_code)>;
+    using ON_CONNECTION_FAILED = boost::function<void (boost::shared_ptr<BaseTransport>, const boost::system::error_code)>;
 public:
 
     ClientFactory(boost::shared_ptr<boost::asio::io_context> ioc);
@@ -29,6 +34,24 @@ protected:
 public:
 
     /**
+     * @brief bind_handle_connection_lost 绑定连接丢失事件
+     * @param on 事件处理函数
+     */
+    inline void bind_handle_connection_lost(ON_CONNECTION_LOST on)
+    {
+        m_fn_connection_lost = on;
+    }
+
+    /**
+     * @brief bind_handle_connection_failed 绑定连接失败事件
+     * @param on 事件处理函数
+     */
+    inline void bind_handle_connection_failed(ON_CONNECTION_FAILED on)
+    {
+        m_fn_connection_failed = on;
+    }
+
+    /**
      * @brief connection_lost 当连接在半途中出现问题的时候对连接进行处理
      * @param connector 连接器
      * @param err 错误码
@@ -41,6 +64,10 @@ public:
      * @param err 错误码
      */
     virtual void connection_failed(boost::shared_ptr<BaseTransport> connector, const boost::system::error_code &err);
+
+protected:
+    ON_CONNECTION_LOST m_fn_connection_lost;
+    ON_CONNECTION_FAILED m_fn_connection_failed;
 };
 
 #endif // CLIENTFACTORY_H

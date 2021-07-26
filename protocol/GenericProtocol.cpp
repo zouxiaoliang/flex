@@ -9,12 +9,10 @@
 #include <iostream>
 using namespace boost::placeholders;
 
-GenericProtocol::GenericProtocol(boost::shared_ptr<boost::asio::io_context> ioc, boost::shared_ptr<TcpTransport> transport):
+GenericProtocol::GenericProtocol(boost::shared_ptr<boost::asio::io_context> ioc, boost::shared_ptr<BaseTransport> transport):
     BaseProtocol(ioc, transport),
     m_timer(*ioc)
 {
-    m_error_count = 0;
-    m_recv_count = 0;
     m_timer.expires_from_now(boost::posix_time::seconds(5));
     m_timer.async_wait(boost::bind(&GenericProtocol::print, this));
     m_buffer.reserve(100 * 1024);
@@ -36,7 +34,7 @@ void GenericProtocol::write(const std::string &message)
         char *body = (char *)h + sizeof(Head);
         memcpy(body, message.c_str(), message.size());
 
-        m_transport->write(buffer, boost::bind(&GenericProtocol::on_write_error, this, _1));
+        m_transport->write(buffer);
     }
 }
 
@@ -61,7 +59,8 @@ int32_t GenericProtocol::transport_status()
 void GenericProtocol::on_message_received(const std::string &message)
 {
     // std::cout << "recv: " << message << std::endl;
-    ++m_recv_count;
+//    ++ m_flow_statistics.in_count;
+//    m_flow_statistics.in_bytes += message.size();
 }
 
 void GenericProtocol::on_connected()
@@ -104,24 +103,27 @@ void GenericProtocol::on_raw_data_received(const std::string &data)
     m_buffer = m_buffer.substr(pos);
 }
 
-void GenericProtocol::on_write_error(const std::string &data)
+void GenericProtocol::on_write_error(const std::string &data, const boost::system::error_code &ec)
 {
-//    std::cout << "send data failed, data length: " << data.size() <<
-    //                 ", transport status: " << m_transport->status() << std::endl;
-    ++ m_error_count;
+    std::cout << "send data failed, data length: " << data.size() << ", transport status: " << m_transport->status() << std::endl;
+//    ++ m_flow_statistics.err_count;
+//    m_flow_statistics.err_bytes += data.size();
 }
 
 void GenericProtocol::print()
 {
-    if (0 != m_error_count || 0 != m_recv_count)
-    {
-        std::cout << "time:" << ::time(0) << std::endl;
-        std::cout << "      error_count: " << m_error_count << std::endl;
-        std::cout << "      recv_count: " << m_recv_count << std::endl;
-    }
+//    if (!m_flow_statistics.empty())
+//    {
+//        std::cout << "time:" << ::time(0) << std::endl;
+//        std::cout << "      in count: " << m_flow_statistics.in_count << std::endl
+//                  << "      in bytes: " << m_flow_statistics.in_bytes << std::endl
+//                  << "      out count: " << m_flow_statistics.out_count << std::endl
+//                  << "      out bytes: " << m_flow_statistics.out_bytes << std::endl
+//                  << "      err count: " << m_flow_statistics.err_count << std::endl
+//                  << "      err bytes: " << m_flow_statistics.err_bytes << std::endl;
+//    }
 
-    m_error_count = 0;
-    m_recv_count = 0;
+//    m_flow_statistics.clear();
 
     m_timer.expires_from_now(boost::posix_time::seconds(5));
     m_timer.async_wait(boost::bind(&GenericProtocol::print, this));

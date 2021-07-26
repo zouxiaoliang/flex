@@ -11,7 +11,7 @@
 
 #include <iostream>
 
-class TcpTransport;
+class BaseTransport;
 
 /**
  * @brief The CBaseProtocol class 组装业务数据基类，并将数据发送到对端
@@ -19,7 +19,7 @@ class TcpTransport;
 class BaseProtocol
 {
 public:
-    BaseProtocol(boost::shared_ptr<boost::asio::io_context> ioc, boost::shared_ptr<TcpTransport> transport) :
+    BaseProtocol(boost::shared_ptr<boost::asio::io_context> ioc, boost::shared_ptr<BaseTransport> transport) :
           m_ioc(ioc),
           m_transport(transport)
     {
@@ -31,6 +31,7 @@ public:
             m_transport->bind_handle_disconnected(boost::bind(&BaseProtocol::on_disconnected, this));
             m_transport->bind_handle_data_recevied(boost::bind(&BaseProtocol::on_raw_data_received, this, _1));
             m_transport->bind_handle_write_completed(boost::bind(&BaseProtocol::on_write_completed, this));
+            m_transport->bind_handle_write_failed(boost::bind(&BaseProtocol::on_write_error, this, _1, _2));
         }
     }
 
@@ -46,7 +47,7 @@ public:
         using namespace boost::placeholders;
         if (m_transport)
         {
-            m_transport->write(message, boost::bind(&BaseProtocol::on_write_error, this, _1));
+            m_transport->write(message, boost::bind(&BaseProtocol::on_write_error, this, _1, _2));
         }
     }
 
@@ -89,8 +90,7 @@ protected:
      * @brief on_write_error
      * @param data
      */
-    virtual void on_write_error(const std::string &data) {}
-
+    virtual void on_write_error(const std::string &data, const boost::system::error_code &ec) {};
     /**
      * @brief on_write_completed
      */
@@ -111,7 +111,7 @@ protected:
 
 protected:
     boost::shared_ptr<boost::asio::io_context> m_ioc;
-    boost::shared_ptr<TcpTransport> m_transport;
+    boost::shared_ptr<BaseTransport> m_transport;
 };
 
 #endif // BASEPROTOCOL_H

@@ -27,19 +27,55 @@ typedef boost::function<void(boost::shared_ptr<TcpTransport>, const boost::syste
 typedef boost::function<void(boost::shared_ptr<TcpTransport>, const boost::system::error_code&)> on_connection_failed;
 typedef boost::function<void ()> on_write_completed;
 
-typedef KeyVariant<
-    boost::function<void()>,
-    boost::function<void (bool)>,
-    boost::function<void(const std::string &)>,
-    boost::function<void(boost::shared_ptr<TcpTransport>, const boost::system::error_code&)>
-> TOnEvent;
-
 }
 
-class TcpTransport : public boost::enable_shared_from_this<TcpTransport> ,
-        public BaseTransport
+class TcpTransport : public boost::enable_shared_from_this<TcpTransport>,
+                     public BaseTransport
 {
 public:
+    struct FlowStatistics
+    {
+        struct ValueType
+        {
+            uint64_t count;
+            uint64_t bytes;
+        };
+
+        enum FlowType
+        {
+            IN,
+            OUT,
+            ERR,
+
+            Max,
+        };
+
+        ValueType flow[FlowType::Max];
+
+        void increase(FlowType t, uint64_t var)
+        {
+            flow[t].count += 1;
+            flow[t].bytes += var;
+        }
+
+        bool empty()
+        {
+            for (const auto &v : flow)
+            {
+                if (0 != v.count || 0 != v.bytes)
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        void clear()
+        {
+            memset(this, 0x0, sizeof(*this));
+        }
+    };
+
     enum
     {
         EN_LOCAL_ENDPOINT,
@@ -48,11 +84,11 @@ public:
 
 public:
     TcpTransport(
-            boost::shared_ptr<boost::asio::io_context> ioc,
-            boost::shared_ptr<boost::asio::ip::tcp::socket> socket,
-            time_t timeout,
-            size_t block_size
-            );
+        boost::shared_ptr<boost::asio::io_context> ioc,
+        boost::shared_ptr<boost::asio::ip::tcp::socket> socket,
+        time_t timeout,
+        size_t block_size
+        );
     virtual ~TcpTransport();
 
     /**
@@ -65,23 +101,23 @@ public:
      * @brief start 启动通讯管道
      * @param m_resolver
      */
-    void connect(const std::string& path);
+    void connect(const std::string& path) override;
 
     /**
      * @brief Transport::connect
      */
-    void connect();
+    void connect() override;
 
     /**
      * @brief stop 关闭通讯管道
      */
-    void disconnect();
+    void disconnect() override;
 
     /**
-     * @brief status
+     * @brief status 当前transport的状态
      * @return
      */
-    int32_t status();
+    int32_t status() override;
 
     /**
      * @brief connection_made
@@ -89,14 +125,22 @@ public:
     void connection_made();
 
     /**
-     * @brief write 数据写入接口
+     * @brief write
+     * @param data
      */
-    void write(const std::string &data, boost::function<void(const std::string &)> handle_error);
+    void write(const std::string &data) override;
+
+    /**
+     * @brief write 数据写入接口
+     * @brief handle_error 数据写入失败的处理函数
+     * @bug 当前接口并不能针对消息绑定对应的错误处理函数，建议不使用
+     */
+    void write(const std::string &data, const transport::on_write_failed &handle_error) override;
 
     /**
      * @brief flush
      */
-    void flush();
+    void flush() override;
 
     /**
      * @brief endpoint 获取连接地址信息
@@ -124,6 +168,7 @@ protected:
      * @param length 已经写的长度
      */
     void handle_write(const boost::system::error_code& err, size_t length);
+    void handle_write_with_handle_error(const boost::system::error_code& err, size_t length, transport::on_write_failed handle_error);
 
     /**
      * @brief close_socket 关闭socket连接
@@ -134,6 +179,12 @@ protected:
      * @brief do_write
      */
     void do_write();
+
+    /**
+     * @brief do_write
+     * @param handle_error
+     */
+    void do_write(transport::on_write_failed handle_error);
 
     /**
      * @brief do_read
@@ -155,9 +206,20 @@ protected:
     char *m_read_data;
     size_t m_read_data_length;
 
+    /**
+     * @brief m_allocator
+     */
     std::allocator<std::string> m_allocator;
 
+    /**
+     * @brief m_messages
+     */
     std::SGIList<std::string*> m_messages;
+
+    /**
+     * @brief m_flow_statistics
+     */
+    FlowStatistics m_flow_statistics;
 };
 
 #endif // TCPTRANSPORT_H

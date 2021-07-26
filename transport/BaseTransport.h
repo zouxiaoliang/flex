@@ -18,11 +18,11 @@ namespace transport {
  */
 typedef boost::function<void ()> on_connected;
 typedef boost::function<void ()> on_disconnected;
+typedef boost::function<void ()> on_write_completed;
 typedef boost::function<void(const std::string &)> on_data_recevied;
+typedef boost::function<void(const std::string &, const boost::system::error_code &)> on_write_failed;
 typedef boost::function<void(boost::shared_ptr<BaseTransport>, const boost::system::error_code&)> on_connection_lost;
 typedef boost::function<void(boost::shared_ptr<BaseTransport>, const boost::system::error_code&)> on_connection_failed;
-typedef boost::function<void ()> on_write_completed;
-
 /**
  * transport 状态
  */
@@ -43,6 +43,7 @@ enum EEventCallback
     EN_DATA_RECEIVED,       // recv message from server.  
 
     // ERROR OR FAILED
+    EN_WRITE_FAILED,
     EN_CONNECTION_LOST,     // network aviable, the session closed or other unknown error.
     EN_CONNECTION_FAILED,   // can't connect to the server.
 };
@@ -103,7 +104,8 @@ public:
      * @param data 消息
      * @param handle_error 发送失败处理回调
      */
-    void write(const std::string &data, boost::function<void(const std::string&)> handle_error = nullptr) {}
+    virtual void write(const std::string &data) = 0;
+    virtual void write(const std::string &data, const transport::on_write_failed &handle_error) = 0;
 
     /**
      * @brief flush 清空发送缓冲
@@ -121,10 +123,11 @@ public:
 
     void bind_handle_connected(transport::on_connected on) { m_fn_handle_connected = on; }
     void bind_handle_disconnected(transport::on_disconnected on) { m_fn_handle_disconnected = on; }
+    void bind_handle_write_completed(transport::on_write_completed on) { m_fn_handle_write_completed = on; }
     void bind_handle_data_recevied(transport::on_data_recevied on) { m_fn_handle_data_recevied = on; }
+    void bind_handle_write_failed(transport::on_write_failed on) { m_fn_handle_write_failed = on; }
     void bind_handle_connection_lost(transport::on_connection_lost on) { m_fn_handle_connection_lost = on; }
     void bind_handle_connection_failed(transport::on_connection_failed on) { m_fn_handle_connection_failed = on; }
-    void bind_handle_write_completed(transport::on_write_completed on) { m_fn_handle_write_completed = on; }
 
     /**
      * @brief reset_callback 重置回调函数接口
@@ -145,6 +148,9 @@ public:
             break;
         case transport::EEventCallback::EN_DATA_RECEIVED:
             m_fn_handle_data_recevied.clear();
+            break;
+        case transport::EEventCallback::EN_WRITE_FAILED:
+            m_fn_handle_write_failed.clear();
             break;
         case transport::EEventCallback::EN_CONNECTION_LOST:
             m_fn_handle_connection_lost.clear();
@@ -173,10 +179,11 @@ protected:
 
     transport::on_connected m_fn_handle_connected;
     transport::on_disconnected m_fn_handle_disconnected;
+    transport::on_write_completed m_fn_handle_write_completed;
     transport::on_data_recevied m_fn_handle_data_recevied;
+    transport::on_write_failed m_fn_handle_write_failed;
     transport::on_connection_lost m_fn_handle_connection_lost;
     transport::on_connection_failed m_fn_handle_connection_failed;
-    transport::on_write_completed m_fn_handle_write_completed;
 };
 
 
