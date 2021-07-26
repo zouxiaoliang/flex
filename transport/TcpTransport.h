@@ -15,24 +15,16 @@
 
 class TcpTransport;
 
-namespace tcp {
-
-/**
- * @brief CallBack 可变类型回调函数
- */
-typedef boost::function<void ()> on_connected;
-typedef boost::function<void ()> on_disconnected;
-typedef boost::function<void(const std::string &)> on_data_recevied;
-typedef boost::function<void(boost::shared_ptr<TcpTransport>, const boost::system::error_code&)> on_connection_lost;
-typedef boost::function<void(boost::shared_ptr<TcpTransport>, const boost::system::error_code&)> on_connection_failed;
-typedef boost::function<void ()> on_write_completed;
-
-}
-
 class TcpTransport : public boost::enable_shared_from_this<TcpTransport>,
                      public BaseTransport
 {
 public:
+    struct Message
+    {
+        std::string *data;
+        transport::on_write_failed on;
+    };
+
     struct FlowStatistics
     {
         struct ValueType
@@ -125,17 +117,11 @@ public:
     void connection_made();
 
     /**
-     * @brief write
-     * @param data
-     */
-    void write(const std::string &data) override;
-
-    /**
-     * @brief write 数据写入接口
+     * @brief write 数据写入接口，针对特定的消息如果发送失败需要特殊处理，则使用该接口
      * @brief handle_error 数据写入失败的处理函数
      * @bug 当前接口并不能针对消息绑定对应的错误处理函数，建议不使用
      */
-    void write(const std::string &data, const transport::on_write_failed &handle_error) override;
+    void write(const std::string &data, const transport::on_write_failed &handle_error = {}) override;
 
     /**
      * @brief flush
@@ -168,7 +154,6 @@ protected:
      * @param length 已经写的长度
      */
     void handle_write(const boost::system::error_code& err, size_t length);
-    void handle_write_with_handle_error(const boost::system::error_code& err, size_t length, transport::on_write_failed handle_error);
 
     /**
      * @brief close_socket 关闭socket连接
@@ -179,12 +164,6 @@ protected:
      * @brief do_write
      */
     void do_write();
-
-    /**
-     * @brief do_write
-     * @param handle_error
-     */
-    void do_write(transport::on_write_failed handle_error);
 
     /**
      * @brief do_read
@@ -214,7 +193,8 @@ protected:
     /**
      * @brief m_messages
      */
-    std::SGIList<std::string*> m_messages;
+    // std::SGIList<std::string*> m_messages;
+    std::SGIList<Message> m_messages;
 
     /**
      * @brief m_flow_statistics

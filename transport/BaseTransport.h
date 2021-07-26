@@ -104,8 +104,7 @@ public:
      * @param data 消息
      * @param handle_error 发送失败处理回调
      */
-    virtual void write(const std::string &data) = 0;
-    virtual void write(const std::string &data, const transport::on_write_failed &handle_error) = 0;
+    virtual void write(const std::string &data, const transport::on_write_failed &handle_error = {}) = 0;
 
     /**
      * @brief flush 清空发送缓冲
