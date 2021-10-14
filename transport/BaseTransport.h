@@ -6,8 +6,6 @@
 #include <boost/atomic.hpp>
 #include <string>
 
-#include "utils/KeyVariant.h"
-
 class BaseTransport;
 class BaseProtocol;
 

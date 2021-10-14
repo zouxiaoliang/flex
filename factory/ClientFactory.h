@@ -7,24 +7,24 @@
 #include <boost/function.hpp>
 
 /**
- * @brief The ClientFactory class
+ * @brief The AutoReconnectFactory class
  * @details
- *      1、协议工厂，用于创建连接
+ *      1、协议工厂，用于创建连接, 以及断开连接自动重连
  *      2、针对连接失败进行处理，例如重连机制
  *      3、针对连接丢失进行处理，例如重连机制
  */
-class ClientFactory : public BaseFactory
-{
+class AutoReconnectFactory : public BaseFactory {
 public:
     using ON_CONNECTION_LOST = boost::function<void (boost::shared_ptr<BaseTransport>, const boost::system::error_code)>;
-    using ON_CONNECTION_FAILED = boost::function<void (boost::shared_ptr<BaseTransport>, const boost::system::error_code)>;
+    using ON_CONNECTION_FAILED =
+        boost::function<void(boost::shared_ptr<BaseTransport>, const boost::system::error_code)>;
+
 public:
+    AutoReconnectFactory(boost::shared_ptr<boost::asio::io_context> ioc);
 
-    ClientFactory(boost::shared_ptr<boost::asio::io_context> ioc);
+    virtual ~AutoReconnectFactory();
 
-    virtual ~ClientFactory();
 protected:
-
     /**
      * @brief __build_protocol 自定义构建方法，注册重连回调函数
      * @param transport

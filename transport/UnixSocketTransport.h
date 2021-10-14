@@ -6,9 +6,6 @@
 
 #include "BaseTransport.h"
 
-#include "utils/KeyVariant.h"
-#include "utils/sgi_plus.h"
-
 class UnixSocketTransport : public boost::enable_shared_from_this<UnixSocketTransport>,
                             public BaseTransport {
 public:

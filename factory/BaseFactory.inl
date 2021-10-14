@@ -20,8 +20,7 @@ boost::shared_ptr<ProtocolType> BaseFactory::connect(const std::string &url, tim
 template<class ProtocolType, class TransportType>
 boost::shared_ptr<ProtocolType> BaseFactory::build_protocol(const std::string &url, time_t timeout , size_t block_size)
 {
-    auto socket = boost::make_shared<boost::asio::ip::tcp::socket>(*this->m_ioc);
-    auto transport = boost::make_shared<TransportType>(this->m_ioc, socket, timeout, block_size);
+    auto transport = boost::make_shared<TransportType>(this->m_ioc, timeout, block_size);
     auto protocol = boost::make_shared<ProtocolType>(this->m_ioc, transport);
 
     this->__build_protocol(transport, protocol);

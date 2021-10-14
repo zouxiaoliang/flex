@@ -9,16 +9,9 @@
 
 using namespace boost::placeholders;
 
-TcpTransport::TcpTransport(boost::shared_ptr<boost::asio::io_context> ioc, boost::shared_ptr<boost::asio::ip::tcp::socket> socket, time_t timeout, size_t block_size) :
-    BaseTransport(ioc, timeout, block_size),
-      m_socket(socket),
-      m_resolver(*ioc),
-      m_read_data(new char[block_size]),
-      m_read_data_length(block_size),
-      m_messages()
-{
-
-}
+TcpTransport::TcpTransport(boost::shared_ptr<boost::asio::io_context> ioc, time_t timeout, size_t block_size)
+    : BaseTransport(ioc, timeout, block_size), m_socket(*ioc), m_resolver(*ioc), m_read_data(new char[block_size]),
+      m_read_data_length(block_size), m_messages() {}
 
 TcpTransport::~TcpTransport()
 {
@@ -79,9 +72,8 @@ void TcpTransport::connect()
     m_transport_status = transport::EN_READY;
 
     boost::asio::async_connect(
-                *m_socket, m_endpoints,
-                boost::bind(&TcpTransport::handle_connect, shared_from_this(), boost::asio::placeholders::error)
-                );
+        m_socket, m_endpoints,
+        boost::bind(&TcpTransport::handle_connect, shared_from_this(), boost::asio::placeholders::error));
     m_transport_status = transport::EN_CONNECTING;
 }
 
@@ -100,10 +92,10 @@ void TcpTransport::connection_made()
     boost::system::error_code set_option_err;
     boost::asio::ip::tcp::no_delay no_delay(true);
 
-    m_socket->set_option(no_delay, set_option_err);
+    m_socket.set_option(no_delay, set_option_err);
     m_transport_status = transport::EN_OK;
-    m_local_endpoint = m_socket->local_endpoint();
-    m_remote_endpoint = m_socket->remote_endpoint();
+    m_local_endpoint   = m_socket.local_endpoint();
+    m_remote_endpoint  = m_socket.remote_endpoint();
 
     // 接收数据
     do_read();
@@ -172,10 +164,10 @@ void TcpTransport::handle_connect(const boost::system::error_code &err)
         boost::system::error_code set_option_err;
         boost::asio::ip::tcp::no_delay no_delay(true);
 
-        m_socket->set_option(no_delay, set_option_err);
+        m_socket.set_option(no_delay, set_option_err);
 
-        m_local_endpoint = m_socket->local_endpoint();
-        m_remote_endpoint = m_socket->remote_endpoint();
+        m_local_endpoint  = m_socket.local_endpoint();
+        m_remote_endpoint = m_socket.remote_endpoint();
 
         if (!set_option_err)
         {
@@ -298,7 +290,7 @@ void TcpTransport::handle_write(const boost::system::error_code &err, size_t len
 void TcpTransport::handle_close()
 {
     m_transport_status = transport::EN_CLOSE;
-    m_socket->close();
+    m_socket.close();
     std::cout << "close_socket" << std::endl;
     if (m_fn_handle_disconnected)
     {
@@ -309,8 +301,7 @@ void TcpTransport::handle_close()
 void TcpTransport::do_write()
 {
     boost::asio::async_write(
-        *m_socket,
-        boost::asio::buffer(m_messages.front().data->data(), m_messages.front().data->size()),
+        m_socket, boost::asio::buffer(m_messages.front().data->data(), m_messages.front().data->size()),
         boost::asio::transfer_at_least(m_messages.front().data->size()),
         boost::bind(&TcpTransport::handle_write, shared_from_this(), _1, _2));
 }
@@ -318,11 +309,8 @@ void TcpTransport::do_write()
 void TcpTransport::do_read()
 {
     boost::asio::async_read(
-        *m_socket,
-        boost::asio::buffer(m_read_data, m_read_data_length),
-        boost::asio::transfer_at_least(1),
-        boost::bind(&TcpTransport::handle_read, shared_from_this(), _1, _2)
-        );
+        m_socket, boost::asio::buffer(m_read_data, m_read_data_length), boost::asio::transfer_at_least(1),
+        boost::bind(&TcpTransport::handle_read, shared_from_this(), _1, _2));
 }
 
 void TcpTransport::check_deadline()
