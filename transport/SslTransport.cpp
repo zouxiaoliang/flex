@@ -95,7 +95,18 @@ void SslTransport::write(const std::string& data, const transport::on_write_fail
     });
 }
 
-void SslTransport::flush() {}
+void SslTransport::flush() {
+    boost::asio::post(m_strand, [this]() {
+        // 检查是否有数据正在发送，如果队列中存在数据，则表示有数据正在发送
+
+        if (m_messages.empty()) {
+            // 所有缓冲区的消息已经处理完毕，需要通知外部继续处理
+            if (m_fn_handle_write_completed) {
+                m_fn_handle_write_completed();
+            }
+        }
+    });
+}
 
 bool SslTransport::verify_certificate(bool preverified, boost::asio::ssl::verify_context& ctx) {
     char  subject_name[256];
