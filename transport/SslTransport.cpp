@@ -58,10 +58,23 @@ void SslTransport::connection_mode() {
     boost::system::error_code      set_option_err;
     boost::asio::ip::tcp::no_delay no_delay(true);
 
+    // set socket option
     m_ssl_socket.lowest_layer().set_option(no_delay, set_option_err);
+
+    // update transoport status and record loacl/remote address
     m_transport_status = transport::EN_OK;
     m_local_endpoint   = m_ssl_socket.lowest_layer().local_endpoint();
     m_remote_endpoint  = m_ssl_socket.lowest_layer().remote_endpoint();
+
+    // ssl handshake
+    m_ssl_socket.async_handshake(
+        boost::asio::ssl::stream_base::client,
+        boost::bind(&SslTransport::handle_handshake, shared_from_this(), boost::asio::placeholders::error));
+
+    // notify the caller, connection is ok
+    if (m_fn_handle_connected) {
+        m_fn_handle_connected();
+    }
 
     // 接收数据
     do_read();
@@ -109,7 +122,8 @@ void SslTransport::flush() {
 }
 
 bool SslTransport::verify_certificate(bool preverified, boost::asio::ssl::verify_context& ctx) {
-    char  subject_name[256];
+    char subject_name[256] = {};
+
     X509* cert = X509_STORE_CTX_get_current_cert(ctx.native_handle());
     X509_NAME_oneline(X509_get_subject_name(cert), subject_name, 256);
 
@@ -124,28 +138,7 @@ boost::asio::ip::tcp::endpoint SslTransport::endpoint(int32_t type) {
 
 void SslTransport::handle_connect(const boost::system::error_code& err) {
     if (!err) {
-        boost::system::error_code      set_option_err;
-        boost::asio::ip::tcp::no_delay no_delay(true);
-
-        m_ssl_socket.lowest_layer().set_option(no_delay, set_option_err);
-
-        m_local_endpoint  = m_ssl_socket.lowest_layer().local_endpoint();
-        m_remote_endpoint = m_ssl_socket.lowest_layer().remote_endpoint();
-
-        if (!set_option_err) {
-            m_transport_status = transport::EN_OK;
-
-            if (m_fn_handle_connected) {
-                m_fn_handle_connected();
-            }
-
-            m_ssl_socket.async_handshake(
-                boost::asio::ssl::stream_base::client,
-                boost::bind(&SslTransport::handle_handshake, shared_from_this(), boost::asio::placeholders::error));
-
-            // 接收数据
-            do_read();
-        }
+        connection_mode();
     } else {
         m_transport_status = transport::EN_CLOSE;
         std::cout << "handle_connect error, messsage: " << err.message() << std::endl;

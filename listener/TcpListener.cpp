@@ -1,5 +1,4 @@
 #include "TcpListener.h"
-#include "factory/ClientFactory.h"
 #include "protocol/GenericProtocol.h"
 
 #include <boost/make_shared.hpp>

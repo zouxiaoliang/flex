@@ -6,7 +6,7 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/enable_shared_from_this.hpp>
 
-class BaseFactory;
+class Connector;
 class TcpTransport;
 class BaseProtocol;
 
@@ -27,14 +27,17 @@ public:
      * @param factory protocol工厂对象
      */
     template <class ProtocolType>
-    void listen(boost::shared_ptr<boost::asio::io_context> ioc, const boost::asio::ip::tcp::endpoint& endpoint, boost::shared_ptr<BaseFactory> factory);
+    void listen(
+        boost::shared_ptr<boost::asio::io_context> ioc,
+        const boost::asio::ip::tcp::endpoint&      endpoint,
+        boost::shared_ptr<Connector>               factory);
+
 protected:
-
     template <class ProtocolType>
-    void do_accept(boost::shared_ptr<boost::asio::io_context> ioc,
-                   boost::shared_ptr<boost::asio::ip::tcp::acceptor> acceptor,
-                   boost::shared_ptr<BaseFactory> factory);
-
+    void do_accept(
+        boost::shared_ptr<boost::asio::io_context>        ioc,
+        boost::shared_ptr<boost::asio::ip::tcp::acceptor> acceptor,
+        boost::shared_ptr<Connector>                      factory);
 
     /**
      * @brief handle_accept accept回调处理函数
@@ -46,11 +49,11 @@ protected:
      */
     template <class ProtocolType>
     void handle_accept(
-            boost::shared_ptr<boost::asio::io_context> ioc,
-            boost::shared_ptr<boost::asio::ip::tcp::acceptor> acceptor,
-            const boost::shared_ptr<boost::asio::ip::tcp::socket> socket,
-            boost::shared_ptr<BaseFactory> factory,
-            const boost::system::error_code &err);
+        boost::shared_ptr<boost::asio::io_context>            ioc,
+        boost::shared_ptr<boost::asio::ip::tcp::acceptor>     acceptor,
+        const boost::shared_ptr<boost::asio::ip::tcp::socket> socket,
+        boost::shared_ptr<Connector>                          factory,
+        const boost::system::error_code&                      err);
 
     virtual void connection_made(boost::shared_ptr<BaseProtocol> session);
 };

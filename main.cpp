@@ -6,10 +6,11 @@
 #include <boost/thread.hpp>
 #include <boost/algorithm/string.hpp>
 
+#include "factory/AutoConnector.h"
+#include "listener/Listener.h"
+#include "listener/TcpListener.h"
 #include "protocol/GenericProtocol.h"
 #include "transport/TcpTransport.h"
-#include "factory/ClientFactory.h"
-#include "listener/TcpListener.h"
 
 using namespace std;
 #ifndef PRIu64
@@ -38,13 +39,13 @@ void start_client(const std::string &url, uint64_t count, uint64_t client_count)
 {
     auto ioc = boost::make_shared<boost::asio::io_context>();
 
-    auto client_factory = boost::make_shared<ClientFactory>(ioc);
+    auto reconnect_factory = boost::make_shared<AutoReconnector>(ioc);
 
     // clients
     std::vector<boost::shared_ptr<BaseProtocol>> clients;
     for (int var = 0; var < client_count; ++ var)
     {
-        auto client_instance = client_factory->connect<GenericProtocol, TcpTransport>(url, 10, 1024);
+        auto client_instance = reconnect_factory->connect<GenericProtocol, TcpTransport>(url, 10, 1024);
         if (client_instance)
             clients.push_back(client_instance);
     }
@@ -120,23 +121,25 @@ void start_client(const std::string &url, uint64_t count, uint64_t client_count)
     }
 }
 
-void start_server()
-{
+void start_server() {
+#if 1
     auto ioc = boost::make_shared<boost::asio::io_context>();
 
-    uint16_t port = 8000;
-    boost::asio::ip::address address = boost::asio::ip::make_address("0.0.0.0");
-    auto client_factory = boost::make_shared<ClientFactory>(ioc);
+    uint16_t                 port              = 8000;
+    boost::asio::ip::address address           = boost::asio::ip::make_address("0.0.0.0");
+    auto                     reconnect_factory = boost::make_shared<AutoReconnector>(ioc);
 
     // service
-    TcpListener listener;
-    listener.listen<GenericProtocol>(
-                ioc,
-                boost::asio::ip::tcp::endpoint(address, port),
-                client_factory
-                );
 
+#if 0
+    TcpListener listener;
+    listener.listen<GenericProtocol>(ioc, boost::asio::ip::tcp::endpoint(address, port), reconnect_factory);
+#else
+    TcpTransport transport(ioc, 100, 1024);
+    transport.accept("tcp://127.0.0.1:8888");
+#endif
     ioc->run();
+#endif
 }
 
 class Helloworld

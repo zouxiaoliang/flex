@@ -2,8 +2,9 @@
 #define BASETRANSPORT_H
 
 #include <boost/asio.hpp>
-#include <boost/function.hpp>
 #include <boost/atomic.hpp>
+#include <boost/function.hpp>
+#include <iostream>
 #include <string>
 
 class BaseTransport;
@@ -14,46 +15,38 @@ namespace transport {
 /**
  * @brief CallBack 可变类型回调函数
  */
-typedef boost::function<void ()> on_connected;
-typedef boost::function<void ()> on_disconnected;
-typedef boost::function<void ()> on_write_completed;
-typedef boost::function<void(const std::string &)> on_data_recevied;
-typedef boost::function<void(const std::string &, const boost::system::error_code &)> on_write_failed;
+typedef boost::function<void()>                                                                   on_connected;
+typedef boost::function<void()>                                                                   on_disconnected;
+typedef boost::function<void()>                                                                   on_write_completed;
+typedef boost::function<void(const std::string&)>                                                 on_data_recevied;
+typedef boost::function<void(const std::string&, const boost::system::error_code&)>               on_write_failed;
 typedef boost::function<void(boost::shared_ptr<BaseTransport>, const boost::system::error_code&)> on_connection_lost;
 typedef boost::function<void(boost::shared_ptr<BaseTransport>, const boost::system::error_code&)> on_connection_failed;
+typedef boost::function<void(const boost::system::error_code&)>                                   on_accept_failed;
+
 /**
  * transport 状态
  */
-enum ETransportStatus
-{
-    EN_READY,
-    EN_CONNECTING,
-    EN_OK,
-    EN_CLOSE
-};
+enum ETransportStatus { EN_READY, EN_CONNECTING, EN_OK, EN_CLOSE };
 
-enum EEventCallback
-{
+enum EEventCallback {
     // EVENT TRICK
-    EN_ON_CONNCETED,        // connected to server
-    EN_ON_DISCONNECTED,     // disconnected to server
-    EN_WRITE_COMPLETED,  // pre-send buffer is empty.
-    EN_DATA_RECEIVED,       // recv message from server.  
+    EN_ON_CONNCETED,    // connected to server
+    EN_ON_DISCONNECTED, // disconnected to server
+    EN_WRITE_COMPLETED, // pre-send buffer is empty.
+    EN_DATA_RECEIVED,   // recv message from server.
 
     // ERROR OR FAILED
     EN_WRITE_FAILED,
-    EN_CONNECTION_LOST,     // network aviable, the session closed or other unknown error.
-    EN_CONNECTION_FAILED,   // can't connect to the server.
+    EN_CONNECTION_LOST,   // network aviable, the session closed or other unknown error.
+    EN_CONNECTION_FAILED, // can't connect to the server.
 };
-}
+} // namespace transport
 
-class BaseTransport
-{
+class BaseTransport {
 public:
-    BaseTransport(boost::shared_ptr<boost::asio::io_context> ioc,
-                  time_t timeout,
-                  size_t block_size) :
-        m_strand(*ioc), m_timeout(timeout), m_block_size(block_size), m_transport_status(transport::EN_CLOSE) {}
+    BaseTransport(boost::shared_ptr<boost::asio::io_context> ioc, time_t timeout, size_t block_size)
+        : m_strand(*ioc), m_timeout(timeout), m_block_size(block_size), m_transport_status(transport::EN_CLOSE) {}
 
     virtual ~BaseTransport() = default;
 
@@ -61,19 +54,23 @@ public:
      * @brief set_protocol 设置应用层处理协议
      * @param protocol 协议处理独享
      */
-    void set_protocol(boost::shared_ptr<BaseProtocol> protocol) { m_protocol = protocol; }
+    void set_protocol(boost::shared_ptr<BaseProtocol> protocol) {
+        m_protocol = protocol;
+    }
 
     /**
      * @brief protocol 获取协议对象
      * @return
      */
-    boost::shared_ptr<BaseProtocol> protocol() { return m_protocol; }
+    boost::shared_ptr<BaseProtocol> protocol() {
+        return m_protocol;
+    }
 
     /**
      * @brief connect 连接服务端
      * @param path 服务端信息
      */
-    virtual void connect(const std::string &path) {}
+    virtual void connect(const std::string& path) {}
 
     /**
      * @brief connect 连接
@@ -86,11 +83,19 @@ public:
     virtual void disconnect() {}
 
     /**
+     * @brief accept
+     * @param url
+     */
+    virtual void accept(const std::string& url) {}
+
+    /**
      * @brief status 当前状态
      * @ref ETransportStatus
      * @return
      */
-    virtual int32_t status() { return m_transport_status; }
+    virtual int32_t status() {
+        return m_transport_status;
+    }
 
     /**
      * @brief connection_mode 连接建立完成
@@ -102,7 +107,7 @@ public:
      * @param data 消息
      * @param handle_error 发送失败处理回调
      */
-    virtual void write(const std::string &data, const transport::on_write_failed &handle_error = {}) = 0;
+    virtual void write(const std::string& data, const transport::on_write_failed& handle_error = {}) = 0;
 
     /**
      * @brief flush 清空发送缓冲
@@ -116,24 +121,42 @@ public:
     // clang-format off
     [[deprecated("instead use bind_handle_data_recevied")]]
     // clang-format on
-    void set_on_read(boost::function<void(const std::string &data)> on_read) { m_fn_handle_data_recevied = on_read; }
+    void
+    set_on_read(boost::function<void(const std::string& data)> on_read) {
+        m_fn_handle_data_recevied = on_read;
+    }
 
-    void bind_handle_connected(transport::on_connected on) { m_fn_handle_connected = on; }
-    void bind_handle_disconnected(transport::on_disconnected on) { m_fn_handle_disconnected = on; }
-    void bind_handle_write_completed(transport::on_write_completed on) { m_fn_handle_write_completed = on; }
-    void bind_handle_data_recevied(transport::on_data_recevied on) { m_fn_handle_data_recevied = on; }
-    void bind_handle_write_failed(transport::on_write_failed on) { m_fn_handle_write_failed = on; }
-    void bind_handle_connection_lost(transport::on_connection_lost on) { m_fn_handle_connection_lost = on; }
-    void bind_handle_connection_failed(transport::on_connection_failed on) { m_fn_handle_connection_failed = on; }
+    void bind_handle_connected(transport::on_connected on) {
+        m_fn_handle_connected = on;
+    }
+    void bind_handle_disconnected(transport::on_disconnected on) {
+        m_fn_handle_disconnected = on;
+    }
+    void bind_handle_write_completed(transport::on_write_completed on) {
+        m_fn_handle_write_completed = on;
+    }
+    void bind_handle_data_recevied(transport::on_data_recevied on) {
+        m_fn_handle_data_recevied = on;
+    }
+    void bind_handle_write_failed(transport::on_write_failed on) {
+        m_fn_handle_write_failed = on;
+    }
+    void bind_handle_connection_lost(transport::on_connection_lost on) {
+        m_fn_handle_connection_lost = on;
+    }
+    void bind_handle_connection_failed(transport::on_connection_failed on) {
+        m_fn_handle_connection_failed = on;
+    }
+    void bind_handle_accept_failed(transport::on_accept_failed on) {
+        m_fn_handle_accept_failed = on;
+    }
 
     /**
      * @brief reset_callback 重置回调函数接口
      * @param callback_id
      */
-    void reset_callback(transport::EEventCallback callback_id)
-    {
-        switch (callback_id)
-        {
+    void reset_callback(transport::EEventCallback callback_id) {
+        switch (callback_id) {
         case transport::EEventCallback::EN_ON_CONNCETED:
             m_fn_handle_connected.clear();
             break;
@@ -174,14 +197,14 @@ protected:
     /// @brief 处理协议的引用
     boost::shared_ptr<BaseProtocol> m_protocol;
 
-    transport::on_connected m_fn_handle_connected;
-    transport::on_disconnected m_fn_handle_disconnected;
-    transport::on_write_completed m_fn_handle_write_completed;
-    transport::on_data_recevied m_fn_handle_data_recevied;
-    transport::on_write_failed m_fn_handle_write_failed;
-    transport::on_connection_lost m_fn_handle_connection_lost;
+    transport::on_connected         m_fn_handle_connected;
+    transport::on_disconnected      m_fn_handle_disconnected;
+    transport::on_write_completed   m_fn_handle_write_completed;
+    transport::on_data_recevied     m_fn_handle_data_recevied;
+    transport::on_write_failed      m_fn_handle_write_failed;
+    transport::on_connection_lost   m_fn_handle_connection_lost;
     transport::on_connection_failed m_fn_handle_connection_failed;
+    transport::on_accept_failed     m_fn_handle_accept_failed;
 };
 
-
-#endif //BASETRANSPORT_H
+#endif // BASETRANSPORT_H

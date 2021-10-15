@@ -1,11 +1,13 @@
 #include "TcpListener.h"
-#include "factory/BaseFactory.h"
+#include "factory/Connector.h"
 
 #include <iostream>
 
 template <class ProtocolType>
-void TcpListener::listen(boost::shared_ptr<boost::asio::io_context> ioc, const boost::asio::ip::tcp::endpoint& endpoint, boost::shared_ptr<BaseFactory> factory)
-{
+void TcpListener::listen(
+    boost::shared_ptr<boost::asio::io_context> ioc,
+    const boost::asio::ip::tcp::endpoint&      endpoint,
+    boost::shared_ptr<Connector>               factory) {
     boost::shared_ptr<boost::asio::ip::tcp::acceptor> acceptor = boost::make_shared<boost::asio::ip::tcp::acceptor>(*ioc);
     acceptor->open(endpoint.protocol());
     acceptor->set_option(boost::asio::ip::tcp::acceptor::reuse_address(1));
@@ -15,10 +17,10 @@ void TcpListener::listen(boost::shared_ptr<boost::asio::io_context> ioc, const b
 }
 
 template <class ProtocolType>
-void TcpListener::do_accept(boost::shared_ptr<boost::asio::io_context> ioc,
-               boost::shared_ptr<boost::asio::ip::tcp::acceptor> acceptor,
-               boost::shared_ptr<BaseFactory> factory)
-{
+void TcpListener::do_accept(
+    boost::shared_ptr<boost::asio::io_context>        ioc,
+    boost::shared_ptr<boost::asio::ip::tcp::acceptor> acceptor,
+    boost::shared_ptr<Connector>                      factory) {
     boost::shared_ptr<boost::asio::ip::tcp::socket> socket = boost::make_shared<boost::asio::ip::tcp::socket>(*ioc);
     acceptor->async_accept(*socket,
                            boost::bind(&TcpListener::handle_accept<ProtocolType>,
@@ -34,12 +36,11 @@ void TcpListener::do_accept(boost::shared_ptr<boost::asio::io_context> ioc,
 
 template <class ProtocolType>
 void TcpListener::handle_accept(
-        boost::shared_ptr<boost::asio::io_context> ioc,
-        boost::shared_ptr<boost::asio::ip::tcp::acceptor> acceptor,
-        const boost::shared_ptr<boost::asio::ip::tcp::socket> socket,
-        boost::shared_ptr<BaseFactory> factory,
-        const boost::system::error_code &err)
-{
+    boost::shared_ptr<boost::asio::io_context>            ioc,
+    boost::shared_ptr<boost::asio::ip::tcp::acceptor>     acceptor,
+    const boost::shared_ptr<boost::asio::ip::tcp::socket> socket,
+    boost::shared_ptr<Connector>                          factory,
+    const boost::system::error_code&                      err) {
     if (!err)
     {
         do_accept<ProtocolType>(ioc ,acceptor, factory);

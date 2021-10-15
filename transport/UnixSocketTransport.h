@@ -1,10 +1,10 @@
 #ifndef UNIXSOCKETTRANSPORT_H
 #define UNIXSOCKETTRANSPORT_H
 
-#include <boost/asio.hpp>
-#include <boost/enable_shared_from_this.hpp>
-
 #include "BaseTransport.h"
+#include <boost/asio.hpp>
+#include <boost/asio/local/stream_protocol.hpp>
+#include <boost/enable_shared_from_this.hpp>
 
 class UnixSocketTransport : public boost::enable_shared_from_this<UnixSocketTransport>,
                             public BaseTransport {
@@ -52,6 +52,10 @@ public:
      * @brief flush
      */
     void flush() override;
+
+protected:
+    boost::asio::local::stream_protocol::socket   m_unix_socket;
+    boost::asio::local::stream_protocol::endpoint m_endpoint;
 };
 
 #endif // UNIXSOCKETTRANSPORT_H

@@ -1,26 +1,26 @@
-#include "ClientFactory.h"
+#include "AutoConnector.h"
 
-AutoReconnectFactory::AutoReconnectFactory(boost::shared_ptr<boost::asio::io_context> ioc) : BaseFactory(ioc) {}
+AutoReconnector::AutoReconnector(boost::shared_ptr<boost::asio::io_context> ioc) : Connector(ioc) {}
 
-AutoReconnectFactory::~AutoReconnectFactory() {}
+AutoReconnector::~AutoReconnector() {}
 
-void AutoReconnectFactory::__build_protocol(
-    boost::shared_ptr<BaseTransport> connector,
+void AutoReconnector::__build_protocol(
+    boost::shared_ptr<BaseTransport> transport,
     boost::shared_ptr<BaseProtocol>  protocol) {
     if (m_fn_connection_lost) {
-        connector->bind_handle_connection_lost(m_fn_connection_lost);
+        transport->bind_handle_connection_lost(m_fn_connection_lost);
     } else {
-        connector->bind_handle_connection_lost(boost::bind(&AutoReconnectFactory::connection_lost, this, _1, _2));
+        transport->bind_handle_connection_lost(boost::bind(&AutoReconnector::connection_lost, this, _1, _2));
     }
 
     if (m_fn_connection_failed) {
-        connector->bind_handle_connection_failed(m_fn_connection_failed);
+        transport->bind_handle_connection_failed(m_fn_connection_failed);
     } else {
-        connector->bind_handle_connection_failed(boost::bind(&AutoReconnectFactory::connection_failed, this, _1, _2));
+        transport->bind_handle_connection_failed(boost::bind(&AutoReconnector::connection_failed, this, _1, _2));
     }
 }
 
-void AutoReconnectFactory::connection_lost(
+void AutoReconnector::connection_lost(
     boost::shared_ptr<BaseTransport> connector,
     const boost::system::error_code& err) {
     if (err) {
@@ -30,7 +30,7 @@ void AutoReconnectFactory::connection_lost(
     }
 }
 
-void AutoReconnectFactory::connection_failed(
+void AutoReconnector::connection_failed(
     boost::shared_ptr<BaseTransport> connector,
     const boost::system::error_code& err) {
     if (err) {

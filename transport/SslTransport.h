@@ -4,9 +4,9 @@
 #include "BaseTransport.h"
 #include <boost/asio.hpp>
 #include <boost/asio/ssl.hpp>
+#include <boost/container/list.hpp>
 #include <boost/enable_shared_from_this.hpp>
 
-#include <list>
 #include <memory>
 
 class SslTransport;
@@ -170,7 +170,8 @@ private:
      * @brief m_messages
      */
     // std::SGIList<std::string*> m_messages;
-    std::list<Message> m_messages;
+    // 使用boost::constainer::list 避免sgi版本的list::size函数出现的遍历计算长度的问题
+    boost::container::list<Message> m_messages;
 
     /**
      * @brief m_flow_statistics

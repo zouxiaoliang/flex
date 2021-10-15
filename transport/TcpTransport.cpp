@@ -10,11 +10,10 @@
 using namespace boost::placeholders;
 
 TcpTransport::TcpTransport(boost::shared_ptr<boost::asio::io_context> ioc, time_t timeout, size_t block_size)
-    : BaseTransport(ioc, timeout, block_size), m_socket(*ioc), m_resolver(*ioc), m_read_data(new char[block_size]),
-      m_read_data_length(block_size), m_messages() {}
+    : BaseTransport(ioc, timeout, block_size), m_socket(*ioc), m_resolver(*ioc), m_ioc(ioc),
+      m_read_data(new char[block_size]), m_read_data_length(block_size), m_messages() {}
 
-TcpTransport::~TcpTransport()
-{
+TcpTransport::~TcpTransport() {
     if (!m_read_data)
     {
         delete [] m_read_data;
@@ -80,6 +79,39 @@ void TcpTransport::connect()
 void TcpTransport::disconnect()
 {
     boost::asio::post(m_strand, boost::bind(&TcpTransport::handle_close, shared_from_this()));
+}
+
+void TcpTransport::accept(const std::string& path) {
+    boost::smatch hosts;
+    boost::regex  tcp_pattern("tcp://(.*):(\\d+)");
+    if (!boost::regex_match(path, hosts, tcp_pattern)) {
+
+        // parse url failed.
+        if (m_fn_handle_accept_failed) {
+            m_fn_handle_accept_failed(boost::system::errc::make_error_code(boost::system::errc::bad_address));
+        }
+
+        return;
+    }
+
+    /*
+    std::cout << "host: " << std::string(hosts[0].first, hosts[0].second) << std::endl;
+    std::cout << "port: " << std::string(hosts[1].first, hosts[1].second) << std::endl;
+    std::cout << "port: " << std::string(hosts[2].first, hosts[2].second) << std::endl;
+    */
+
+    auto                     port     = std::string(hosts[2].first, hosts[2].second);
+    boost::asio::ip::address address  = boost::asio::ip::make_address(std::string(hosts[1].first, hosts[1].second));
+    auto                     endpoint = boost::asio::ip::tcp::endpoint(address, atoi(port.c_str()));
+
+    m_acceptor = boost::make_shared<boost::asio::ip::tcp::acceptor>(*m_ioc);
+
+    m_acceptor->open(endpoint.protocol());
+    m_acceptor->set_option(boost::asio::ip::tcp::acceptor::reuse_address(1));
+    m_acceptor->bind(endpoint);
+    m_acceptor->listen();
+
+    do_accept(shared_from_this());
 }
 
 int32_t TcpTransport::status()
@@ -287,6 +319,17 @@ void TcpTransport::handle_write(const boost::system::error_code &err, size_t len
     }
 }
 
+void TcpTransport::handle_accept(const boost::system::error_code& err) {
+    if (!err) {
+        do_accept(nullptr);
+    } else {
+        std::cout << "accept error: " << err.message() << std::endl;
+        if (m_fn_handle_accept_failed) {
+            m_fn_handle_accept_failed(err);
+        }
+    }
+}
+
 void TcpTransport::handle_close()
 {
     m_transport_status = transport::EN_CLOSE;
@@ -311,6 +354,17 @@ void TcpTransport::do_read()
     boost::asio::async_read(
         m_socket, boost::asio::buffer(m_read_data, m_read_data_length), boost::asio::transfer_at_least(1),
         boost::bind(&TcpTransport::handle_read, shared_from_this(), _1, _2));
+}
+
+void TcpTransport::do_accept(boost::shared_ptr<TcpTransport> transport) {
+    if (nullptr == transport) {
+        transport                            = boost::make_shared<TcpTransport>(m_ioc, m_timeout, m_block_size);
+        transport->m_acceptor                = m_acceptor;
+        transport->m_fn_handle_accept_failed = m_fn_handle_accept_failed;
+    }
+
+    m_acceptor->async_accept(
+        m_socket, boost::bind(&TcpTransport::handle_accept, transport, boost::asio::placeholders::error));
 }
 
 void TcpTransport::check_deadline()

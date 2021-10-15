@@ -74,6 +74,7 @@ public:
 
 public:
     TcpTransport(boost::shared_ptr<boost::asio::io_context> ioc, time_t timeout, size_t block_size);
+
     virtual ~TcpTransport();
 
     /**
@@ -97,6 +98,12 @@ public:
      * @brief stop 关闭通讯管道
      */
     void disconnect() override;
+
+    /**
+     * @brief accept
+     * @param path
+     */
+    void accept(const std::string& path) override;
 
     /**
      * @brief status 当前transport的状态
@@ -148,6 +155,12 @@ protected:
     void handle_write(const boost::system::error_code& err, size_t length);
 
     /**
+     * @brief handle_accept
+     * @param err
+     */
+    void handle_accept(const boost::system::error_code& err);
+
+    /**
      * @brief close_socket 关闭socket连接
      */
     void handle_close();
@@ -163,6 +176,12 @@ protected:
     void do_read();
 
     /**
+     * @brief do_accept
+     * @param transport
+     */
+    void do_accept(boost::shared_ptr<TcpTransport> transport);
+
+    /**
      * @brief check_deadline
      */
     void check_deadline();
@@ -174,7 +193,10 @@ protected:
     boost::asio::ip::tcp::endpoint               m_local_endpoint;
     boost::asio::ip::tcp::endpoint               m_remote_endpoint;
 
-    char *m_read_data;
+    boost::shared_ptr<boost::asio::io_context>        m_ioc;
+    boost::shared_ptr<boost::asio::ip::tcp::acceptor> m_acceptor{nullptr};
+
+    char*  m_read_data;
     size_t m_read_data_length;
 
     /**

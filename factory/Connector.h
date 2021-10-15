@@ -1,6 +1,5 @@
-#ifndef BASEFACTORY_H
-#define BASEFACTORY_H
-
+#ifndef CONNECTOR_H
+#define CONNECTOR_H
 
 #include <string>
 
@@ -15,12 +14,11 @@ class BaseTransport;
  * @brief The CBaseFactory class
  * @details 协议工厂，用于创建连接
  */
-class BaseFactory {
+class Connector {
 public:
+    explicit Connector(boost::shared_ptr<boost::asio::io_context> ioc);
 
-    explicit BaseFactory(boost::shared_ptr<boost::asio::io_context> ioc);
-
-    virtual ~BaseFactory();
+    virtual ~Connector();
 
 public:
 
@@ -42,18 +40,9 @@ public:
      * @param block_size
      * @return
      */
-    template<class ProtocolType>
-    boost::shared_ptr<ProtocolType> on_accept(const boost::shared_ptr<boost::asio::ip::tcp::socket> socket, time_t timeout, size_t block_size);
-
-    /**
-     * @brief build_protocol 创建协议对象
-     * @param url 连接信息
-     * @param timeout 超时时间
-     * @param block_size 消息块大小
-     * @return 协议处理对象
-     */
-    template<class ProtocolType, class TransportType>
-    boost::shared_ptr<ProtocolType> build_protocol(const std::string &url, time_t timeout, size_t block_size);
+    template <class ProtocolType>
+    boost::shared_ptr<ProtocolType>
+    on_accept(const boost::shared_ptr<boost::asio::ip::tcp::socket> socket, time_t timeout, size_t block_size);
 
 protected:
 
@@ -67,6 +56,6 @@ protected:
     boost::shared_ptr<boost::asio::io_context> m_ioc;
 };
 
-#include "BaseFactory.inl"
+#include "Connector.inl"
 
-#endif // BASEFACTORY_H
+#endif // CONNECTOR_H

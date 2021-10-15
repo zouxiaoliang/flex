@@ -1,8 +1,7 @@
-#ifndef CLIENTFACTORY_H
-#define CLIENTFACTORY_H
+#ifndef AUTOCONNECTOR_H
+#define AUTOCONNECTOR_H
 
-
-#include "BaseFactory.h"
+#include "Connector.h"
 
 #include <boost/function.hpp>
 
@@ -13,16 +12,16 @@
  *      2、针对连接失败进行处理，例如重连机制
  *      3、针对连接丢失进行处理，例如重连机制
  */
-class AutoReconnectFactory : public BaseFactory {
+class AutoReconnector : public Connector {
 public:
     using ON_CONNECTION_LOST = boost::function<void (boost::shared_ptr<BaseTransport>, const boost::system::error_code)>;
     using ON_CONNECTION_FAILED =
         boost::function<void(boost::shared_ptr<BaseTransport>, const boost::system::error_code)>;
 
 public:
-    AutoReconnectFactory(boost::shared_ptr<boost::asio::io_context> ioc);
+    AutoReconnector(boost::shared_ptr<boost::asio::io_context> ioc);
 
-    virtual ~AutoReconnectFactory();
+    virtual ~AutoReconnector();
 
 protected:
     /**
@@ -70,4 +69,4 @@ protected:
     ON_CONNECTION_FAILED m_fn_connection_failed;
 };
 
-#endif // CLIENTFACTORY_H
+#endif // AUTOCONNECTOR_H

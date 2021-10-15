@@ -5,6 +5,7 @@ project(flex-cmake LANGUAGES CXX C)
 set(CMAKE_CXX_STANDARD 11)
 
 option(debug "build debug version" ON)
+option(build_test "build test projects" ON)
 
 if (UNIX)
     set(CMAKE_C_FLAGS "-fPIC -Wall -pthread")
@@ -25,8 +26,8 @@ function(flexMain)
     endif()
 
     set (FACTORY
-        "factory/BaseFactory.cpp"
-        "factory/ClientFactory.cpp"
+        "factory/Connector.cpp"
+        "factory/AutoConnector.cpp"
         )
     set (PROTOCOL
         "protocol/BaseProtocol.cpp"
@@ -38,6 +39,7 @@ function(flexMain)
         "transport/Strategy.cpp"
         "transport/SslTransport.cpp"
         )
+    set(LISTENER "listener/TcpListener.cpp" "listener/Listener.cpp")
 
     if (UNIX)
         set (TRANSPORT ${TRANSPORT} "transport/UnixSocketTransport.cpp")
@@ -56,9 +58,17 @@ function(flexMain)
     target_include_directories(thirdparty_libflex_static PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
     target_link_libraries(thirdparty_libflex_static thirdparty_boost)
 
-    target_link_libraries(thirdparty_libflex INTERFACE)
+    target_link_libraries(thirdparty_libflex INTERFACE thirdparty_libflex_static)
     target_include_directories(thirdparty_libflex SYSTEM INTERFACE ${CMAKE_CURRENT_SOURCE_DIR})
 
 endfunction()
 
+function(testMain)
+    add_executable(flex-test main.cpp)
+    target_link_libraries(flex-test thirdparty_libflex thirdparty_boost)
+endfunction()
+
 flexMain()
+if (build_test)
+    testMain()
+endif()
