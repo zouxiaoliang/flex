@@ -30,8 +30,8 @@ public:
      * @return 协议处理对象
      */
 
-    template<class ProtocolType, class TransportType>
-    boost::shared_ptr<ProtocolType> connect(const std::string &url, time_t timeout, size_t block_size);
+    template <class ProtocolType, class TransportType, class... Args>
+    boost::shared_ptr<ProtocolType> connect(const std::string& url, Args... args);
 
     /**
      * @brief on_accept

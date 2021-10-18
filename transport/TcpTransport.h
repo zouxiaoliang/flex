@@ -77,11 +77,6 @@ public:
 
     virtual ~TcpTransport();
 
-    /**
-     * @brief status 设置当前transport的状态
-     * @param status
-     */
-    void status(int32_t status);
 
     /**
      * @brief start 启动通讯管道
@@ -104,6 +99,12 @@ public:
      * @param path
      */
     void accept(const std::string& path) override;
+
+    /**
+     * @brief status 设置当前transport的状态
+     * @param status
+     */
+    void status(int32_t status);
 
     /**
      * @brief status 当前transport的状态
@@ -193,11 +194,11 @@ protected:
     boost::asio::ip::tcp::endpoint               m_local_endpoint;
     boost::asio::ip::tcp::endpoint               m_remote_endpoint;
 
-    boost::shared_ptr<boost::asio::io_context>        m_ioc;
+    boost::shared_ptr<boost::asio::io_context>        m_ioc{nullptr};
     boost::shared_ptr<boost::asio::ip::tcp::acceptor> m_acceptor{nullptr};
 
-    char*  m_read_data;
-    size_t m_read_data_length;
+    char*  m_read_data{nullptr};
+    size_t m_read_data_length{0};
 
     /**
      * @brief m_allocator

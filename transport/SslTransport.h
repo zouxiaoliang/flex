@@ -56,7 +56,15 @@ public:
     enum { EN_LOCAL_ENDPOINT, EN_REMOTE_ENDPOINT };
 
 public:
-    SslTransport(boost::shared_ptr<boost::asio::io_context> ioc, time_t timeout, size_t block_size);
+    SslTransport(
+        boost::shared_ptr<boost::asio::io_context> ioc,
+        time_t                                     timeout,
+        size_t                                     block_size,
+        const std::string&                         certificate_chain_file = "cert.pem",
+        const std::string&                         password               = "",
+        const std::string&                         tmp_dh_file            = "");
+
+    ~SslTransport();
 
     /**
      * @brief connect
@@ -73,6 +81,12 @@ public:
      * @brief disconnect
      */
     void disconnect() override;
+
+    /**
+     * @brief accept
+     * @param path
+     */
+    void accept(const std::string& path) override;
 
     /**
      * @brief connection_mode
@@ -106,6 +120,9 @@ public:
     boost::asio::ip::tcp::endpoint endpoint(int32_t type = EN_LOCAL_ENDPOINT);
 
 protected:
+    std::string password() {
+        return m_password;
+    }
     /**
      * @brief handle_connect 连接处理时间
      * @param err 错误信息
@@ -133,6 +150,12 @@ protected:
     void handle_write(const boost::system::error_code& err, size_t length);
 
     /**
+     * @brief handle_accept
+     * @param err
+     */
+    void handle_accept(const boost::system::error_code& err);
+
+    /**
      * @brief close_socket 关闭socket连接
      */
     void handle_close();
@@ -147,6 +170,12 @@ protected:
      */
     void do_read();
 
+    /**
+     * @brief do_accept
+     * @param transport
+     */
+    void do_accept(boost::shared_ptr<SslTransport> transport);
+
 private:
     boost::asio::ssl::context                   m_ssl_context;
     typedef boost::asio::ip::tcp::socket        TcpSocket;
@@ -158,8 +187,15 @@ private:
     boost::asio::ip::tcp::endpoint               m_local_endpoint;
     boost::asio::ip::tcp::endpoint               m_remote_endpoint;
 
-    char*  m_read_data;
-    size_t m_read_data_length;
+    boost::shared_ptr<boost::asio::io_context>        m_ioc{nullptr};
+    boost::shared_ptr<boost::asio::ip::tcp::acceptor> m_acceptor{nullptr};
+
+    std::string m_certificate_chain_file;
+    std::string m_password;
+    std::string m_tmp_dh_file;
+
+    char*  m_read_data{nullptr};
+    size_t m_read_data_length{0};
 
     /**
      * @brief m_allocator
