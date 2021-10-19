@@ -84,7 +84,7 @@ void start_client(const std::string& url, uint64_t count, uint64_t client_count)
                 clients.push_back(protocol);
             }
         } else {
-            auto protocol = reconnect_factory->connect<GenericProtocol, SslTransport>(url, 10, 1024, "client.pem");
+            auto protocol = reconnect_factory->connect<GenericProtocol, SslTransport>(url, 10, 1024, "public.pem");
             if (protocol) {
                 clients.push_back(protocol);
             }
@@ -105,7 +105,7 @@ void start_client(const std::string& url, uint64_t count, uint64_t client_count)
                 }
 
                 std::sprintf(buffer, fmt, var);
-                // p->write(buffer);
+                p->write(buffer);
             }
             if ((var % count) == 0) {
                 fn::sleep(1);
@@ -142,7 +142,7 @@ void start_server() {
         transport->accept("tcp://127.0.0.1:8888");
 #endif
     } else {
-        auto transport = boost::make_shared<SslTransport>(ioc, 100, 1024, "server.pem", "helloworld", "dh2048.pem");
+        auto transport = boost::make_shared<SslTransport>(ioc, 100, 1024, "private.pem", "helloworld", "dh2048.pem");
         transport->accept("ssl://127.0.0.1:8889");
     }
 

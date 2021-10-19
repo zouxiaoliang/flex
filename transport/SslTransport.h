@@ -181,7 +181,7 @@ private:
     typedef boost::asio::ip::tcp::socket        TcpSocket;
     typedef boost::asio::ssl::stream<TcpSocket> SSLSocket;
 
-    SSLSocket                                    m_ssl_socket;
+    boost::shared_ptr<SSLSocket>                 m_ssl_socket;
     boost::asio::ip::tcp::resolver               m_resolver;
     boost::asio::ip::tcp::resolver::results_type m_endpoints;
     boost::asio::ip::tcp::endpoint               m_local_endpoint;

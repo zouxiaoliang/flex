@@ -13,10 +13,9 @@ SslTransport::SslTransport(
     const std::string&                         certificate_chain_file,
     const std::string&                         password,
     const std::string&                         tmp_dh_file)
-    : BaseTransport(ioc, timeout, block_size), m_ssl_context(boost::asio::ssl::context::sslv23),
-      m_ssl_socket(*ioc, m_ssl_context), m_resolver(*ioc), m_ioc(ioc), m_certificate_chain_file(certificate_chain_file),
-      m_password(password), m_tmp_dh_file(tmp_dh_file), m_read_data(new char[block_size]),
-      m_read_data_length(block_size) {}
+    : BaseTransport(ioc, timeout, block_size), m_ssl_context(boost::asio::ssl::context::sslv23), m_ssl_socket(nullptr),
+      m_resolver(*ioc), m_ioc(ioc), m_certificate_chain_file(certificate_chain_file), m_password(password),
+      m_tmp_dh_file(tmp_dh_file), m_read_data(new char[block_size]), m_read_data_length(block_size) {}
 
 SslTransport::~SslTransport() {
     if (nullptr != m_read_data) {
@@ -55,12 +54,13 @@ void SslTransport::connect(const std::string& path) {
 }
 
 void SslTransport::connect() {
-    m_ssl_socket.set_verify_mode(boost::asio::ssl::verify_peer);
-    m_ssl_socket.set_verify_callback(
+    m_ssl_socket = boost::make_shared<SSLSocket>(*m_ioc, m_ssl_context);
+    m_ssl_socket->set_verify_mode(boost::asio::ssl::verify_peer);
+    m_ssl_socket->set_verify_callback(
         boost::bind(&SslTransport::verify_certificate, this, boost::placeholders::_1, boost::placeholders::_2));
 
     boost::asio::async_connect(
-        m_ssl_socket.lowest_layer(), m_endpoints,
+        m_ssl_socket->lowest_layer(), m_endpoints,
         boost::bind(&SslTransport::handle_connect, shared_from_this(), boost::asio::placeholders::error));
 
     m_transport_status = transport::EN_CONNECTING;
@@ -98,9 +98,20 @@ void SslTransport::accept(const std::string& path) {
     // set options default_workarounds | no_sslv2 | single_dh_use
     namespace ssl = boost::asio::ssl;
     boost::system::error_code err;
+#define USING_DH 1
+#define USING_SSLV23 1
     do {
         m_ssl_context.set_options(
-            ssl::context::default_workarounds | ssl::context::no_sslv2 | ssl::context::single_dh_use);
+            ssl::context::default_workarounds
+#if USING_SSLV23
+            | ssl::context::sslv23
+#else
+            | ssl::context::no_sslv2
+#endif
+#if USING_DH
+            | ssl::context::single_dh_use
+#endif
+        );
         // set password
         m_ssl_context.set_password_callback(boost::bind(&SslTransport::password, this));
         // set certificate chain file
@@ -113,8 +124,10 @@ void SslTransport::accept(const std::string& path) {
         if (err) {
             break;
         }
+#if USING_DH
         // set tmp dh file
         m_ssl_context.use_tmp_dh_file(m_tmp_dh_file, err);
+#endif
         if (err) {
             break;
         }
@@ -128,6 +141,8 @@ void SslTransport::accept(const std::string& path) {
         return;
     }
 
+    m_ssl_socket = boost::make_shared<SSLSocket>(*m_ioc, m_ssl_context);
+
     // start accept
     do_accept(shared_from_this());
 }
@@ -137,12 +152,12 @@ void SslTransport::connection_mode() {
     boost::asio::ip::tcp::no_delay no_delay(true);
 
     // set socket option
-    m_ssl_socket.lowest_layer().set_option(no_delay, set_option_err);
+    m_ssl_socket->lowest_layer().set_option(no_delay, set_option_err);
 
     // update transoport status and record loacl/remote address
     m_transport_status = transport::EN_OK;
-    m_local_endpoint   = m_ssl_socket.lowest_layer().local_endpoint();
-    m_remote_endpoint  = m_ssl_socket.lowest_layer().remote_endpoint();
+    m_local_endpoint   = m_ssl_socket->lowest_layer().local_endpoint();
+    m_remote_endpoint  = m_ssl_socket->lowest_layer().remote_endpoint();
 
     std::cout << "(" << m_local_endpoint.address().to_string() << ":" << m_local_endpoint.port() << ") -> ("
               << m_remote_endpoint.address().to_string() << ":" << m_remote_endpoint.port() << ")" << std::endl;
@@ -215,7 +230,7 @@ void SslTransport::handle_connect(const boost::system::error_code& err) {
         connection_mode();
 
         // ssl handshake
-        m_ssl_socket.async_handshake(
+        m_ssl_socket->async_handshake(
             boost::asio::ssl::stream_base::client,
             boost::bind(&SslTransport::handle_handshake, shared_from_this(), boost::asio::placeholders::error));
 
@@ -319,7 +334,7 @@ void SslTransport::handle_write(const boost::system::error_code& err, size_t len
 void SslTransport::handle_accept(const boost::system::error_code& err) {
     if (!err) {
         // start session, hand shake
-        m_ssl_socket.async_handshake(
+        m_ssl_socket->async_handshake(
             boost::asio::ssl::stream_base::server,
             boost::bind(&SslTransport::handle_handshake, shared_from_this(), boost::asio::placeholders::error));
 
@@ -335,7 +350,7 @@ void SslTransport::handle_accept(const boost::system::error_code& err) {
 
 void SslTransport::handle_close() {
     m_transport_status = transport::EN_CLOSE;
-    m_ssl_socket.lowest_layer().close();
+    m_ssl_socket->lowest_layer().close();
     std::cout << "close_socket" << std::endl;
     if (m_fn_handle_disconnected) {
         m_fn_handle_disconnected();
@@ -344,26 +359,71 @@ void SslTransport::handle_close() {
 
 void SslTransport::do_write() {
     boost::asio::async_write(
-        m_ssl_socket, boost::asio::buffer(m_messages.front().data->data(), m_messages.front().data->size()),
+        *m_ssl_socket, boost::asio::buffer(m_messages.front().data->data(), m_messages.front().data->size()),
         boost::asio::transfer_at_least(m_messages.front().data->size()),
         boost::bind(&SslTransport::handle_write, shared_from_this(), _1, _2));
 }
 
 void SslTransport::do_read() {
     boost::asio::async_read(
-        m_ssl_socket, boost::asio::buffer(m_read_data, m_read_data_length), boost::asio::transfer_at_least(1),
+        *m_ssl_socket, boost::asio::buffer(m_read_data, m_read_data_length), boost::asio::transfer_at_least(1),
         boost::bind(&SslTransport::handle_read, shared_from_this(), _1, _2));
 }
 
 void SslTransport::do_accept(boost::shared_ptr<SslTransport> transport) {
     // acceptor aysnc accept, using a new ssl_socket;
     if (nullptr == transport) {
-        transport = boost::make_shared<SslTransport>(m_ioc, m_timeout, m_block_size, m_certificate_chain_file);
+        transport = boost::make_shared<SslTransport>(
+            m_ioc, m_timeout, m_block_size, m_certificate_chain_file, m_password, m_tmp_dh_file);
         transport->m_acceptor                = m_acceptor;
         transport->m_fn_handle_accept_failed = m_fn_handle_accept_failed;
+
+        namespace ssl = boost::asio::ssl;
+        boost::system::error_code err;
+        do {
+            transport->m_ssl_context.set_options(
+                ssl::context::default_workarounds
+#if USING_SSLV23
+                | ssl::context::sslv23
+#else
+                | ssl::context::no_sslv2
+#endif
+#if USING_DH
+                | ssl::context::single_dh_use
+#endif
+            );
+            // set password
+            transport->m_ssl_context.set_password_callback(boost::bind(&SslTransport::password, this));
+            // set certificate chain file
+            transport->m_ssl_context.use_certificate_chain_file(m_certificate_chain_file, err);
+            if (err) {
+                break;
+            }
+            // set private key file
+            transport->m_ssl_context.use_private_key_file(m_certificate_chain_file, ssl::context::pem, err);
+            if (err) {
+                break;
+            }
+#if USING_DH
+            // set tmp dh file
+            transport->m_ssl_context.use_tmp_dh_file(m_tmp_dh_file, err);
+#endif
+            if (err) {
+                break;
+            }
+        } while (false);
+
+        if (err) {
+            std::cout << "accept failed, error: " << err.message() << std::endl;
+            if (transport->m_fn_handle_accept_failed) {
+                transport->m_fn_handle_accept_failed(err);
+            }
+            return;
+        }
+        transport->m_ssl_socket = boost::make_shared<SSLSocket>(*m_ioc, m_ssl_context);
     }
 
     transport->m_acceptor->async_accept(
-        transport->m_ssl_socket.lowest_layer(),
+        transport->m_ssl_socket->lowest_layer(),
         boost::bind(&SslTransport::handle_accept, transport, boost::asio::placeholders::error));
 }
