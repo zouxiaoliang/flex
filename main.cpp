@@ -8,7 +8,6 @@
 
 #include "factory/AutoConnector.h"
 #include "listener/Listener.h"
-#include "listener/TcpListener.h"
 #include "protocol/GenericProtocol.h"
 #include "transport/SslTransport.h"
 #include "transport/TcpTransport.h"
@@ -130,20 +129,18 @@ void start_server() {
 
     auto ioc = boost::make_shared<boost::asio::io_context>();
     if (g_server_type == ServerType::Tcp) {
-#if 0
-        uint16_t                 port              = 8000;
-        boost::asio::ip::address address           = boost::asio::ip::make_address("0.0.0.0");
-        auto                     reconnect_factory = boost::make_shared<AutoReconnector>(ioc);
+        // auto transport = boost::make_shared<TcpTransport>(ioc, 100, 1024);
+        // transport->accept("tcp://127.0.0.1:8888");
 
-        TcpListener listener;
-        listener.listen<GenericProtocol>(ioc, boost::asio::ip::tcp::endpoint(address, port), reconnect_factory);
-#else
-        auto transport = boost::make_shared<TcpTransport>(ioc, 100, 1024);
-        transport->accept("tcp://127.0.0.1:8888");
-#endif
+        Listener listener(ioc);
+        listener.listen<GenericProtocol, TcpTransport>("tcp://127.0.0.1:8888", 100, 1024);
     } else {
-        auto transport = boost::make_shared<SslTransport>(ioc, 100, 1024, "private.pem", "helloworld", "dh2048.pem");
-        transport->accept("ssl://127.0.0.1:8889");
+        // auto transport = boost::make_shared<SslTransport>(ioc, 100, 1024, "private.pem", "helloworld",
+        // "dh2048.pem"); transport->accept("ssl://127.0.0.1:8889");
+
+        Listener listener(ioc);
+        listener.listen<GenericProtocol, SslTransport>(
+            "ssl://127.0.0.1:8889", 100, 1024, "private.pem", "helloworld", "dh2048.pem");
     }
 
     ioc->run();

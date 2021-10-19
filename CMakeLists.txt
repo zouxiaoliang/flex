@@ -39,7 +39,7 @@ function(flexMain)
         "transport/Strategy.cpp"
         "transport/SslTransport.cpp"
         )
-    set(LISTENER "listener/TcpListener.cpp" "listener/Listener.cpp")
+    set(LISTENER "listener/Listener.cpp")
 
     if (UNIX)
         set (TRANSPORT ${TRANSPORT} "transport/UnixSocketTransport.cpp")

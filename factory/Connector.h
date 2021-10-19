@@ -7,7 +7,6 @@
 #include <boost/asio.hpp>
 
 class BaseProtocol;
-
 class BaseTransport;
 
 /**
@@ -32,17 +31,6 @@ public:
 
     template <class ProtocolType, class TransportType, class... Args>
     boost::shared_ptr<ProtocolType> connect(const std::string& url, Args... args);
-
-    /**
-     * @brief on_accept
-     * @param socket
-     * @param timeout
-     * @param block_size
-     * @return
-     */
-    template <class ProtocolType>
-    boost::shared_ptr<ProtocolType>
-    on_accept(const boost::shared_ptr<boost::asio::ip::tcp::socket> socket, time_t timeout, size_t block_size);
 
 protected:
 
