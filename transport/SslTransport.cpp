@@ -169,9 +169,9 @@ void SslTransport::connection_mode() {
 }
 
 void SslTransport::write(const std::string& data, const transport::on_write_failed& handle_error) {
-    std::cout << "pre post thread id: " << boost::this_thread::get_id() << std::endl;
+    // std::cout << "pre post thread id: " << boost::this_thread::get_id() << std::endl;
     boost::asio::post(m_strand, [this, data, handle_error]() {
-        std::cout << "post, thread id: " << boost::this_thread::get_id() << std::endl;
+        // std::cout << "post, thread id: " << boost::this_thread::get_id() << std::endl;
         // 检查是否有数据正在发送，如果队列中存在数据，则表示有数据正在发送
         bool writing = !m_messages.empty();
 
