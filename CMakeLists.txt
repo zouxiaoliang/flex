@@ -21,7 +21,7 @@ message(STATUS "${PROJECT_NAME} cmake_cxx_flags: ${CMAKE_CXX_FLAGS}")
 
 function(flexMain)
 
-    if (NOT HAS_THIRDPARTY_BOOST_PREFIX)
+    if (NOT HAS_THIRDPARTY_BOOST)
         message(FATAL_ERROR "you need import 'bool-cmake' project from github, cmd `git clone xxx`")
     endif()
 
@@ -42,7 +42,10 @@ function(flexMain)
     set(LISTENER "listener/Listener.cpp")
 
     if (UNIX)
-        set (TRANSPORT ${TRANSPORT} "transport/UnixSocketTransport.cpp")
+        set (TRANSPORT ${TRANSPORT}
+            "transport/UnixSocketTransport.cpp"
+            "transport/NetlinkTransport.cpp"
+            )
     endif()
 
     add_library(thirdparty_libflex INTERFACE)
