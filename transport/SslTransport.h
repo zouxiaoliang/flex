@@ -57,12 +57,9 @@ public:
 
 public:
     SslTransport(
-        boost::shared_ptr<boost::asio::io_context> ioc,
-        time_t                                     timeout,
-        size_t                                     block_size,
-        const std::string&                         certificate_chain_file = "cert.pem",
-        const std::string&                         password               = "",
-        const std::string&                         tmp_dh_file            = "");
+        boost::shared_ptr<boost::asio::io_context> ioc, time_t timeout, size_t block_size,
+        const std::string& certificate_chain_file = "cert.pem", const std::string& password = "",
+        const std::string& tmp_dh_file = "");
 
     ~SslTransport();
 

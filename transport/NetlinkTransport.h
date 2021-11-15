@@ -2,16 +2,17 @@
  * @author zouxiaoliang
  * @date 2021/11/10
  */
-#ifndef NETLINKTRANSPORT_H
-#define NETLINKTRANSPORT_H
+#ifndef FLEX_NETLINKTRANSPORT_H
+#define FLEX_NETLINKTRANSPORT_H
 
 #include <boost/enable_shared_from_this.hpp>
 #include <list>
 #include <memory>
 
 #include "BaseTransport.h"
-#include "boost_netlink/nl_protocol.hpp"
+#include "boost/asio/netlink.hpp"
 
+namespace flex {
 /**
  * @brief The NetlinkTransport class
  * @ref https://stackoverflow.com/questions/13255447/af-netlink-netlink-sockets-using-boostasio
@@ -61,7 +62,9 @@ public:
     enum { EN_LOCAL_ENDPOINT, EN_REMOTE_ENDPOINT };
 
 public:
-    NetlinkTransport(boost::shared_ptr<boost::asio::io_context> ioc, time_t timeout, size_t block_size);
+    NetlinkTransport(
+        boost::shared_ptr<boost::asio::io_context> ioc, time_t timeout, size_t block_size, int32_t pid = getpid(),
+        int32_t group = 0, int proto = 0);
     virtual ~NetlinkTransport();
 
     /**
@@ -138,9 +141,14 @@ protected:
      */
     void do_read();
 
+private:
+    void nlmsg_pack(std::string*& buffer, const std::string& data);
+
+    bool nlmsg_unpack(const char* buffer, size_t length, std::string& message);
+
 protected:
-    boost::asio::netlink::nl_protocol::socket   m_socket;
-    boost::asio::netlink::nl_protocol::endpoint m_endpoint;
+    boost::asio::netlink::socket    m_socket;
+    boost::asio::netlink::endpoints m_endpoints;
 
     boost::shared_ptr<boost::asio::io_context> m_ioc{nullptr};
 
@@ -162,7 +170,11 @@ protected:
      * @brief m_flow_statistics
      */
     FlowStatistics m_flow_statistics;
-};
+
+    int32_t m_pid{-1};
+    int32_t m_group{0};
+    int32_t m_proto{0};
 };
 
+} // namespace flex
 #endif // NETLINKTRANSPORT_H

@@ -42,10 +42,10 @@ function(flexMain)
     set(LISTENER "listener/Listener.cpp")
 
     if (UNIX)
-        set (TRANSPORT ${TRANSPORT}
-            "transport/UnixSocketTransport.cpp"
-            "transport/NetlinkTransport.cpp"
-            )
+        set (TRANSPORT ${TRANSPORT} "transport/UnixSocketTransport.cpp")
+        if (CMAKE_SYSTEM_NAME MATCHES "Linux")
+            set (TRANSPORT ${TRANSPORT} "transport/NetlinkTransport.cpp")
+        endif()
     endif()
 
     add_library(thirdparty_libflex INTERFACE)
@@ -69,6 +69,9 @@ endfunction()
 function(testMain)
     add_executable(flex-test main.cpp)
     target_link_libraries(flex-test thirdparty_libflex thirdparty_boost)
+    if (CMAKE_SYSTEM_NAME MATCHES "Linux")
+        target_link_libraries(flex-test libunwind.a libc++abi.a dl rt)
+    endif()
 endfunction()
 
 flexMain()
