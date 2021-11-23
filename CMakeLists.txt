@@ -22,7 +22,7 @@ message(STATUS "${PROJECT_NAME} cmake_cxx_flags: ${CMAKE_CXX_FLAGS}")
 function(flexMain)
 
     if (NOT HAS_THIRDPARTY_BOOST)
-        message(FATAL_ERROR "you need import 'bool-cmake' project from github, cmd `git clone xxx`")
+        message(FATAL_ERROR "you need import 'boost-cmake' project from github, cmd `git clone xxx`")
     endif()
 
     set (FACTORY
