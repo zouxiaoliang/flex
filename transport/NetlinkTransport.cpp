@@ -39,7 +39,7 @@ void NetlinkTransport::connect(const std::string& path) {
 
     connect();
 }
-#define ASYNC_CONNECT 0
+
 void NetlinkTransport::connect() {
     for (auto& v : m_messages) {
         m_allocator.destroy(v.data);
@@ -50,31 +50,26 @@ void NetlinkTransport::connect() {
 
     m_transport_status = transport::EN_READY;
 
-#if ASYNC_CONNECT
-    boost::asio::async_connect(
-        m_socket, m_endpoints,
-        boost::bind(&NetlinkTransport::handle_connect, shared_from_this(), boost::asio::placeholders::error));
-#else
-    boost::system::error_code ec;
-    m_socket.open(boost::asio::netlink(m_proto), ec);
-    if (ec) {
-        if (this->m_fn_handle_connection_failed) {
-            m_fn_handle_connection_failed(shared_from_this(), ec);
+    auto async_connect = [&]() {
+        boost::system::error_code ec;
+        m_socket.open(boost::asio::netlink(m_proto), ec);
+        if (ec) {
+            if (this->m_fn_handle_connection_failed) {
+                m_fn_handle_connection_failed(shared_from_this(), ec);
+            }
+            return;
         }
-        return;
-    }
-    m_socket.bind(boost::asio::netlink::endpoint(m_group, m_proto), ec);
-    if (ec) {
-        if (this->m_fn_handle_connection_failed) {
-            m_fn_handle_connection_failed(shared_from_this(), ec);
+        m_socket.bind(boost::asio::netlink::endpoint(m_group, m_proto), ec);
+        if (ec) {
+            if (this->m_fn_handle_connection_failed) {
+                m_fn_handle_connection_failed(shared_from_this(), ec);
+            }
+            return;
         }
-        return;
-    }
-#endif
-    m_transport_status = transport::EN_CONNECTING;
-#if !ASYNC_CONNECT
-    this->handle_connect(boost::system::errc::make_error_code(boost::system::errc::success));
-#endif
+        m_transport_status = transport::EN_CONNECTING;
+        this->handle_connect(boost::system::errc::make_error_code(boost::system::errc::success));
+    };
+    m_ioc->post(async_connect);
 }
 
 void NetlinkTransport::disconnect() {
