@@ -55,8 +55,21 @@ void NetlinkTransport::connect() {
         m_socket, m_endpoints,
         boost::bind(&NetlinkTransport::handle_connect, shared_from_this(), boost::asio::placeholders::error));
 #else
-    m_socket.open(boost::asio::netlink(m_proto));
-    m_socket.bind(boost::asio::netlink::endpoint(m_group, m_proto));
+    boost::system::error_code ec;
+    m_socket.open(boost::asio::netlink(m_proto), ec);
+    if (ec) {
+        if (this->m_fn_handle_connection_failed) {
+            m_fn_handle_connection_failed(shared_from_this(), ec);
+        }
+        return;
+    }
+    m_socket.bind(boost::asio::netlink::endpoint(m_group, m_proto), ec);
+    if (ec) {
+        if (this->m_fn_handle_connection_failed) {
+            m_fn_handle_connection_failed(shared_from_this(), ec);
+        }
+        return;
+    }
 #endif
     m_transport_status = transport::EN_CONNECTING;
 #if !ASYNC_CONNECT
