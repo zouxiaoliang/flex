@@ -1,6 +1,7 @@
 #include "SslTransport.h"
 
 #include <boost/bind.hpp>
+#include <boost/filesystem.hpp>
 #include <boost/regex.hpp>
 #include <boost/thread.hpp>
 
@@ -44,14 +45,17 @@ void SslTransport::connect(const std::string& path) {
         return;
     }
 
-    m_ssl_context.load_verify_file(m_certificate_chain_file);
+    if (boost::filesystem::exists(m_certificate_chain_file, ec)) {
+        m_ssl_context.load_verify_file(m_certificate_chain_file);
+        m_ssl_verify_mode = boost::asio::ssl::verify_peer;
+    }
 
     connect();
 }
 
 void SslTransport::connect() {
     m_ssl_socket = boost::make_shared<SSLSocket>(*m_ioc, m_ssl_context);
-    m_ssl_socket->set_verify_mode(boost::asio::ssl::verify_peer);
+    m_ssl_socket->set_verify_mode(m_ssl_verify_mode);
     m_ssl_socket->set_verify_callback(
         boost::bind(&SslTransport::verify_certificate, this, boost::placeholders::_1, boost::placeholders::_2));
 

@@ -187,6 +187,8 @@ private:
     boost::shared_ptr<boost::asio::io_context>        m_ioc{nullptr};
     boost::shared_ptr<boost::asio::ip::tcp::acceptor> m_acceptor{nullptr};
 
+    int m_ssl_verify_mode = {boost::asio::ssl::verify_none};
+
     std::string m_certificate_chain_file;
     std::string m_password;
     std::string m_tmp_dh_file;
