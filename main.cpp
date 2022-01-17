@@ -83,7 +83,7 @@ void start_client(const std::string& url, uint64_t count, uint64_t client_count)
                 clients.push_back(protocol);
             }
         } else {
-            auto protocol = reconnect_factory->connect<GenericProtocol, SslTransport>(url, 10, 1024, "public.pem");
+            auto protocol = reconnect_factory->connect<GenericProtocol, SslTransport>(url, 10, 1024, default_handshake_check, "public.pem");
             if (protocol) {
                 clients.push_back(protocol);
             }
@@ -139,8 +139,7 @@ void start_server() {
         // "dh2048.pem"); transport->accept("ssl://127.0.0.1:8889");
 
         Listener listener(ioc);
-        listener.listen<GenericProtocol, SslTransport>(
-            "ssl://127.0.0.1:8889", 100, 1024, "private.pem", "helloworld", "dh2048.pem");
+        listener.listen<GenericProtocol, SslTransport>("ssl://127.0.0.1:8889", 100, 1024, default_handshake_check, "private.pem", "helloworld", "dh2048.pem");
     }
 
     ioc->run();

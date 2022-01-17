@@ -10,6 +10,7 @@
 #include <memory>
 
 class SslTransport;
+static auto default_handshake_check = [](const std::string&) -> bool { return true; };
 
 class SslTransport : public boost::enable_shared_from_this<SslTransport>, public BaseTransport {
 public:
@@ -57,9 +58,8 @@ public:
 
 public:
     SslTransport(
-        boost::shared_ptr<boost::asio::io_context> ioc, time_t timeout, size_t block_size,
-        const std::string& certificate_chain_file = "cert.pem", const std::string& password = "",
-        const std::string& tmp_dh_file = "");
+        boost::shared_ptr<boost::asio::io_context> ioc, time_t timeout, size_t block_size, boost::function<bool(const std::string&)> handshake_check = default_handshake_check,
+        const std::string& certificate_chain_file = "cert.pem", const std::string& password = "", const std::string& tmp_dh_file = "");
 
     ~SslTransport();
 
@@ -188,6 +188,7 @@ private:
     boost::shared_ptr<boost::asio::ip::tcp::acceptor> m_acceptor{nullptr};
 
     int m_ssl_verify_mode = {boost::asio::ssl::verify_none};
+    boost::function<bool(const std::string&)> m_fn_handshake_check;
 
     std::string m_certificate_chain_file;
     std::string m_password;

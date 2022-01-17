@@ -8,11 +8,10 @@
 #include <iostream>
 
 SslTransport::SslTransport(
-    boost::shared_ptr<boost::asio::io_context> ioc, time_t timeout, size_t block_size,
-    const std::string& certificate_chain_file, const std::string& password, const std::string& tmp_dh_file)
-    : BaseTransport(ioc, timeout, block_size), m_ssl_context(boost::asio::ssl::context::sslv23), m_ssl_socket(nullptr),
-      m_resolver(*ioc), m_ioc(ioc), m_certificate_chain_file(certificate_chain_file), m_password(password),
-      m_tmp_dh_file(tmp_dh_file), m_read_data(new char[block_size]), m_read_data_length(block_size) {}
+    boost::shared_ptr<boost::asio::io_context> ioc, time_t timeout, size_t block_size, boost::function<bool(const std::string&)> handshake_check, const std::string& certificate_chain_file,
+    const std::string& password, const std::string& tmp_dh_file)
+    : BaseTransport(ioc, timeout, block_size), m_ssl_context(boost::asio::ssl::context::sslv23), m_ssl_socket(nullptr), m_resolver(*ioc), m_ioc(ioc), m_fn_handshake_check(handshake_check),
+      m_certificate_chain_file(certificate_chain_file), m_password(password), m_tmp_dh_file(tmp_dh_file), m_read_data(new char[block_size]), m_read_data_length(block_size) {}
 
 SslTransport::~SslTransport() {
     if (nullptr != m_read_data) {
@@ -56,12 +55,9 @@ void SslTransport::connect(const std::string& path) {
 void SslTransport::connect() {
     m_ssl_socket = boost::make_shared<SSLSocket>(*m_ioc, m_ssl_context);
     m_ssl_socket->set_verify_mode(m_ssl_verify_mode);
-    m_ssl_socket->set_verify_callback(
-        boost::bind(&SslTransport::verify_certificate, this, boost::placeholders::_1, boost::placeholders::_2));
+    m_ssl_socket->set_verify_callback(boost::bind(&SslTransport::verify_certificate, this, boost::placeholders::_1, boost::placeholders::_2));
 
-    boost::asio::async_connect(
-        m_ssl_socket->lowest_layer(), m_endpoints,
-        boost::bind(&SslTransport::handle_connect, shared_from_this(), boost::asio::placeholders::error));
+    boost::asio::async_connect(m_ssl_socket->lowest_layer(), m_endpoints, boost::bind(&SslTransport::handle_connect, shared_from_this(), boost::asio::placeholders::error));
 
     m_transport_status = transport::EN_CONNECTING;
 }
@@ -161,11 +157,6 @@ void SslTransport::connection_mode() {
 
     std::cout << "(" << m_local_endpoint.address().to_string() << ":" << m_local_endpoint.port() << ") -> ("
               << m_remote_endpoint.address().to_string() << ":" << m_remote_endpoint.port() << ")" << std::endl;
-
-    // notify the caller, connection is ok
-    if (m_fn_handle_connected) {
-        m_fn_handle_connected();
-    }
 }
 
 void SslTransport::write(const std::string& data, const transport::on_write_failed& handle_error) {
@@ -215,8 +206,10 @@ bool SslTransport::verify_certificate(bool preverified, boost::asio::ssl::verify
     X509* cert = X509_STORE_CTX_get_current_cert(ctx.native_handle());
     X509_NAME_oneline(X509_get_subject_name(cert), subject_name, 256);
 
-    std::cout << "Verifying " << subject_name << "\n";
-
+    std::cout << "Verifying " << subject_name << ", preverified is " << (preverified ? "True" : "False") << std::endl;
+    if (m_fn_handshake_check) {
+        return m_fn_handshake_check(subject_name);
+    }
     return preverified;
 }
 
@@ -246,6 +239,10 @@ void SslTransport::handle_connect(const boost::system::error_code& err) {
 void SslTransport::handle_handshake(const boost::system::error_code& err) {
     if (!err) {
         // now, hand shake is ok, you can recv data from server.
+        // notify the caller, connection is ok
+        if (m_fn_handle_connected) {
+            m_fn_handle_connected();
+        }
         do_read();
     } else {
         m_transport_status = transport::EN_CLOSE;
@@ -373,8 +370,7 @@ void SslTransport::do_read() {
 void SslTransport::do_accept(boost::shared_ptr<SslTransport> transport) {
     // acceptor aysnc accept, using a new ssl_socket;
     if (nullptr == transport) {
-        transport = boost::make_shared<SslTransport>(
-            m_ioc, m_timeout, m_block_size, m_certificate_chain_file, m_password, m_tmp_dh_file);
+        transport                            = boost::make_shared<SslTransport>(m_ioc, m_timeout, m_block_size, m_fn_handshake_check, m_certificate_chain_file, m_password, m_tmp_dh_file);
         transport->m_acceptor                = m_acceptor;
         transport->m_fn_handle_accept_failed = m_fn_handle_accept_failed;
 
