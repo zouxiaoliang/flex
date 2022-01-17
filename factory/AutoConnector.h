@@ -19,7 +19,7 @@ public:
         boost::function<void(boost::shared_ptr<BaseTransport>, const boost::system::error_code)>;
 
 public:
-    AutoReconnector(boost::shared_ptr<boost::asio::io_context> ioc);
+    AutoReconnector(boost::shared_ptr<boost::asio::io_context> ioc, time_t reconnection_cycle = 5);
 
     virtual ~AutoReconnector();
 
@@ -67,6 +67,8 @@ public:
 protected:
     ON_CONNECTION_LOST m_fn_connection_lost;
     ON_CONNECTION_FAILED m_fn_connection_failed;
+
+    time_t m_reconnection_cycle{5};
 };
 
 #endif // AUTOCONNECTOR_H
