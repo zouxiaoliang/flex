@@ -90,7 +90,7 @@ protected:
      * @brief on_write_error
      * @param data
      */
-    virtual void on_write_error(const std::string &data, const boost::system::error_code &ec) {};
+    virtual void on_write_error(const std::string& data, const boost::system::error_code& ec){};
     /**
      * @brief on_write_completed
      */

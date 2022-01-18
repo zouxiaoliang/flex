@@ -62,13 +62,17 @@ public:
      * @param connector 连接器
      * @param err 错误码
      */
-    virtual void connection_failed(boost::shared_ptr<BaseTransport> connector, const boost::system::error_code &err);
+    virtual void connection_failed(boost::shared_ptr<BaseTransport> connector, const boost::system::error_code& err);
+
+private:
+    void reconnection(boost::shared_ptr<BaseTransport> connector);
 
 protected:
     ON_CONNECTION_LOST m_fn_connection_lost;
     ON_CONNECTION_FAILED m_fn_connection_failed;
 
     time_t m_reconnection_cycle{5};
+    boost::asio::deadline_timer m_delay_connect;
 };
 
 #endif // AUTOCONNECTOR_H
