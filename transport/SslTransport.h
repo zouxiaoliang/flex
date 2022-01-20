@@ -58,8 +58,11 @@ public:
 
 public:
     SslTransport(
-        boost::shared_ptr<boost::asio::io_context> ioc, time_t timeout, size_t block_size, boost::function<bool(const std::string&)> handshake_check = default_handshake_check,
-        const std::string& certificate_chain_file = "cert.pem", const std::string& password = "", const std::string& tmp_dh_file = "");
+        boost::shared_ptr<boost::asio::io_context> ioc, time_t timeout, size_t block_size,
+        boost::asio::ssl::context::method         method          = boost::asio::ssl::context::sslv3,
+        boost::function<bool(const std::string&)> handshake_check = default_handshake_check,
+        const std::string& certificate_chain_file = "cert.pem", const std::string& password = "",
+        const std::string& tmp_dh_file = "");
 
     ~SslTransport();
 
@@ -174,6 +177,7 @@ protected:
     void do_accept(boost::shared_ptr<SslTransport> transport);
 
 private:
+    boost::asio::ssl::context::method           m_method;
     boost::asio::ssl::context                   m_ssl_context;
     typedef boost::asio::ip::tcp::socket        TcpSocket;
     typedef boost::asio::ssl::stream<TcpSocket> SSLSocket;
