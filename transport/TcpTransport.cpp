@@ -72,7 +72,7 @@ void TcpTransport::disconnect() {
     boost::asio::post(m_strand, boost::bind(&TcpTransport::handle_close, shared_from_this()));
 }
 
-void TcpTransport::accept(const std::string& path) {
+void TcpTransport::accept(const std::string& path, boost::function<void(boost::shared_ptr<BaseTransport>)> on_accept) {
     boost::smatch hosts;
     boost::regex  tcp_pattern("tcp://(.*):(\\d+)");
     if (!boost::regex_match(path, hosts, tcp_pattern)) {

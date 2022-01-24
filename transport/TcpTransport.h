@@ -98,7 +98,7 @@ public:
      * @brief accept
      * @param path
      */
-    void accept(const std::string& path) override;
+    void accept(const std::string& path, boost::function<void(boost::shared_ptr<BaseTransport>)> on_accept) override;
 
     /**
      * @brief status 设置当前transport的状态

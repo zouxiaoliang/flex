@@ -58,11 +58,9 @@ public:
 
 public:
     SslTransport(
-        boost::shared_ptr<boost::asio::io_context> ioc, time_t timeout, size_t block_size,
-        boost::asio::ssl::context::method         method          = boost::asio::ssl::context::sslv3,
-        boost::function<bool(const std::string&)> handshake_check = default_handshake_check,
-        const std::string& certificate_chain_file = "cert.pem", const std::string& password = "",
-        const std::string& tmp_dh_file = "");
+        boost::shared_ptr<boost::asio::io_context> ioc, time_t timeout, size_t block_size, boost::asio::ssl::context::method method = boost::asio::ssl::context::sslv3,
+        boost::function<bool(const std::string&)> handshake_check = default_handshake_check, const std::string& certificate_chain_file = "cert.pem", const std::string& private_file = "private.pem",
+        const std::string& password = "", const std::string& tmp_dh_file = "");
 
     ~SslTransport();
 
@@ -86,7 +84,7 @@ public:
      * @brief accept
      * @param path
      */
-    void accept(const std::string& path) override;
+    void accept(const std::string& path, boost::function<void(boost::shared_ptr<BaseTransport>)> on_accept) override;
 
     /**
      * @brief connection_mode
@@ -195,6 +193,7 @@ private:
     boost::function<bool(const std::string&)> m_fn_handshake_check;
 
     std::string m_certificate_chain_file;
+    std::string m_private_file;
     std::string m_password;
     std::string m_tmp_dh_file;
 

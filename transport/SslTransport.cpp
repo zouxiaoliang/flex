@@ -8,13 +8,11 @@
 #include <iostream>
 
 SslTransport::SslTransport(
-    boost::shared_ptr<boost::asio::io_context> ioc, time_t timeout, size_t block_size,
-    boost::asio::ssl::context_base::method method, boost::function<bool(const std::string&)> handshake_check,
-    const std::string& certificate_chain_file, const std::string& password, const std::string& tmp_dh_file)
-    : BaseTransport(ioc, timeout, block_size), m_method(method), m_ssl_context(method), m_ssl_socket(nullptr),
-      m_resolver(*ioc), m_ioc(ioc), m_fn_handshake_check(handshake_check),
-      m_certificate_chain_file(certificate_chain_file), m_password(password), m_tmp_dh_file(tmp_dh_file),
-      m_read_data(new char[block_size]), m_read_data_length(block_size) {}
+    boost::shared_ptr<boost::asio::io_context> ioc, time_t timeout, size_t block_size, boost::asio::ssl::context_base::method method, boost::function<bool(const std::string&)> handshake_check,
+    const std::string& certificate_chain_file, const std::string& private_file, const std::string& password, const std::string& tmp_dh_file)
+    : BaseTransport(ioc, timeout, block_size), m_method(method), m_ssl_context(method), m_ssl_socket(nullptr), m_resolver(*ioc), m_ioc(ioc), m_fn_handshake_check(handshake_check),
+      m_certificate_chain_file(certificate_chain_file), m_private_file(private_file), m_password(password), m_tmp_dh_file(tmp_dh_file), m_read_data(new char[block_size]),
+      m_read_data_length(block_size) {}
 
 SslTransport::~SslTransport() {
     if (nullptr != m_read_data) {
@@ -69,12 +67,10 @@ void SslTransport::disconnect() {
     boost::asio::post(m_strand, boost::bind(&SslTransport::handle_close, shared_from_this()));
 }
 
-void SslTransport::accept(const std::string& path) {
-
+void SslTransport::accept(const std::string& path, boost::function<void(boost::shared_ptr<BaseTransport>)> on_accept) {
     boost::smatch hosts;
     boost::regex  tcp_pattern("ssl://(.*):(\\d+)");
-    if (!boost::regex_match(path, hosts, tcp_pattern)) {
-
+    if (!boost::regex_search(path, hosts, tcp_pattern)) {
         // parse url failed.
         if (m_fn_handle_accept_failed) {
             m_fn_handle_accept_failed(boost::system::errc::make_error_code(boost::system::errc::bad_address));
@@ -98,15 +94,9 @@ void SslTransport::accept(const std::string& path) {
     namespace ssl = boost::asio::ssl;
     boost::system::error_code err;
 #define USING_DH 1
-#define USING_SSLV23 1
     do {
         m_ssl_context.set_options(
             ssl::context::default_workarounds
-#if USING_SSLV23
-            | ssl::context::sslv23
-#else
-            | ssl::context::no_sslv2
-#endif
 #if USING_DH
             | ssl::context::single_dh_use
 #endif
@@ -116,22 +106,26 @@ void SslTransport::accept(const std::string& path) {
         // set certificate chain file
         m_ssl_context.use_certificate_chain_file(m_certificate_chain_file, err);
         if (err) {
+            std::cout << "use_certificate_chain_file error, what: " << err.message() << std::endl;
             break;
         }
         // set private key file
-        m_ssl_context.use_private_key_file(m_certificate_chain_file, ssl::context::pem, err);
+        m_ssl_context.use_private_key_file(m_private_file, ssl::context::pem, err);
         if (err) {
+            std::cout << "use_private_key_file error, what: " << err.message() << std::endl;
             break;
         }
 #if USING_DH
         // set tmp dh file
         if (!m_tmp_dh_file.empty()) {
             m_ssl_context.use_tmp_dh_file(m_tmp_dh_file, err);
+            if (err) {
+                std::cout << "use_tmp_dh_file error, what: " << err.message() << std::endl;
+                break;
+            }
         }
 #endif
-        if (err) {
-            break;
-        }
+
     } while (false);
 
     if (err) {
@@ -143,7 +137,7 @@ void SslTransport::accept(const std::string& path) {
     }
 
     m_ssl_socket = boost::make_shared<SSLSocket>(*m_ioc, m_ssl_context);
-
+    m_fn_handle_accept = on_accept;
     // start accept
     do_accept(shared_from_this());
 }
@@ -224,9 +218,6 @@ boost::asio::ip::tcp::endpoint SslTransport::endpoint(int32_t type) {
 
 void SslTransport::handle_connect(const boost::system::error_code& err) {
     if (!err) {
-        // update some infomations and flsga, and notify the caller connnection is ok.
-        connection_mode();
-
         // ssl handshake
         m_ssl_socket->async_handshake(
             boost::asio::ssl::stream_base::client,
@@ -243,6 +234,9 @@ void SslTransport::handle_connect(const boost::system::error_code& err) {
 
 void SslTransport::handle_handshake(const boost::system::error_code& err) {
     if (!err) {
+        // update some infomations and flsga, and notify the caller connnection is ok.
+        connection_mode();
+
         // now, hand shake is ok, you can recv data from server.
         // notify the caller, connection is ok
         if (m_fn_handle_connected) {
@@ -375,22 +369,19 @@ void SslTransport::do_read() {
 void SslTransport::do_accept(boost::shared_ptr<SslTransport> transport) {
     // acceptor aysnc accept, using a new ssl_socket;
     if (nullptr == transport) {
-        transport = boost::make_shared<SslTransport>(
-            m_ioc, m_timeout, m_block_size, m_method, m_fn_handshake_check, m_certificate_chain_file, m_password,
-            m_tmp_dh_file);
+        // TODO bind protocol
+        transport = boost::make_shared<SslTransport>(m_ioc, m_timeout, m_block_size, m_method, m_fn_handshake_check, m_certificate_chain_file, m_private_file, m_password, m_tmp_dh_file);
         transport->m_acceptor                = m_acceptor;
+        transport->m_fn_handle_accept        = m_fn_handle_accept;
         transport->m_fn_handle_accept_failed = m_fn_handle_accept_failed;
+
+        m_fn_handle_accept(transport);
 
         namespace ssl = boost::asio::ssl;
         boost::system::error_code err;
         do {
             transport->m_ssl_context.set_options(
                 ssl::context::default_workarounds
-#if USING_SSLV23
-                | ssl::context::sslv23
-#else
-                | ssl::context::no_sslv2
-#endif
 #if USING_DH
                 | ssl::context::single_dh_use
 #endif
@@ -400,20 +391,25 @@ void SslTransport::do_accept(boost::shared_ptr<SslTransport> transport) {
             // set certificate chain file
             transport->m_ssl_context.use_certificate_chain_file(m_certificate_chain_file, err);
             if (err) {
+                std::cout << "use_certificate_chain_file error, what: " << err.message() << std::endl;
                 break;
             }
             // set private key file
-            transport->m_ssl_context.use_private_key_file(m_certificate_chain_file, ssl::context::pem, err);
+            transport->m_ssl_context.use_private_key_file(m_private_file, ssl::context::pem, err);
             if (err) {
+                std::cout << "use_private_key_file error, what: " << err.message() << std::endl;
                 break;
             }
 #if USING_DH
             // set tmp dh file
-            transport->m_ssl_context.use_tmp_dh_file(m_tmp_dh_file, err);
-#endif
-            if (err) {
-                break;
+            if (!m_tmp_dh_file.empty()) {
+                transport->m_ssl_context.use_tmp_dh_file(m_tmp_dh_file, err);
+                if (err) {
+                    std::cout << "use_private_key_file error, what: " << err.message() << std::endl;
+                    break;
+                }
             }
+#endif
         } while (false);
 
         if (err) {
@@ -426,7 +422,5 @@ void SslTransport::do_accept(boost::shared_ptr<SslTransport> transport) {
         transport->m_ssl_socket = boost::make_shared<SSLSocket>(*m_ioc, m_ssl_context);
     }
 
-    transport->m_acceptor->async_accept(
-        transport->m_ssl_socket->lowest_layer(),
-        boost::bind(&SslTransport::handle_accept, transport, boost::asio::placeholders::error));
+    transport->m_acceptor->async_accept(transport->m_ssl_socket->lowest_layer(), boost::bind(&SslTransport::handle_accept, transport, boost::asio::placeholders::error));
 }

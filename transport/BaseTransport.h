@@ -23,7 +23,7 @@ typedef boost::function<void(const std::string&, const boost::system::error_code
 typedef boost::function<void(boost::shared_ptr<BaseTransport>, const boost::system::error_code&)> on_connection_lost;
 typedef boost::function<void(boost::shared_ptr<BaseTransport>, const boost::system::error_code&)> on_connection_failed;
 typedef boost::function<void(const boost::system::error_code&)>                                   on_accept_failed;
-
+typedef boost::function<void(boost::shared_ptr<BaseTransport>)>                                   on_accept;
 /**
  * transport 状态
  */
@@ -86,7 +86,7 @@ public:
      * @brief accept
      * @param url
      */
-    virtual void accept(const std::string& url) {}
+    virtual void accept(const std::string& url, boost::function<void(boost::shared_ptr<BaseTransport>)> on_accept) {}
 
     /**
      * @brief status 当前状态
@@ -205,6 +205,7 @@ protected:
     transport::on_connection_lost   m_fn_handle_connection_lost;
     transport::on_connection_failed m_fn_handle_connection_failed;
     transport::on_accept_failed     m_fn_handle_accept_failed;
+    transport::on_accept            m_fn_handle_accept;
 };
 
 #endif // BASETRANSPORT_H
