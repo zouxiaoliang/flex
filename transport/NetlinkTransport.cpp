@@ -76,7 +76,7 @@ void NetlinkTransport::disconnect() {
     boost::asio::post(m_strand, boost::bind(&NetlinkTransport::handle_close, shared_from_this()));
 }
 
-void NetlinkTransport::accept(const std::string& path) {}
+void NetlinkTransport::accept(const std::string& path, boost::function<void(boost::shared_ptr<BaseTransport>)> on_accept) {}
 
 void NetlinkTransport::connection_mode() {}
 
