@@ -154,8 +154,11 @@ void SslTransport::connection_mode() {
     m_local_endpoint   = m_ssl_socket->lowest_layer().local_endpoint();
     m_remote_endpoint  = m_ssl_socket->lowest_layer().remote_endpoint();
 
-    std::cout << "(" << m_local_endpoint.address().to_string() << ":" << m_local_endpoint.port() << ") -> ("
-              << m_remote_endpoint.address().to_string() << ":" << m_remote_endpoint.port() << ")" << std::endl;
+    std::cout << "(" << m_local_endpoint.address().to_string() << ":" << m_local_endpoint.port() << ") -> (" << m_remote_endpoint.address().to_string() << ":" << m_remote_endpoint.port() << ")"
+              << std::endl;
+
+    set_local_address(m_local_endpoint.address().to_string() + ":" + std::to_string(m_local_endpoint.port()));
+    set_remote_address(m_remote_endpoint.address().to_string() + ":" + std::to_string(m_remote_endpoint.port()));
 }
 
 void SslTransport::write(const std::string& data, const transport::on_write_failed& handle_error) {

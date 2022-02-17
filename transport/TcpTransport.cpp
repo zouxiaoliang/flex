@@ -122,6 +122,9 @@ void TcpTransport::connection_made() {
     m_local_endpoint   = m_socket.local_endpoint();
     m_remote_endpoint  = m_socket.remote_endpoint();
 
+    set_local_address(m_local_endpoint.address().to_string() + ":" + std::to_string(m_local_endpoint.port()));
+    set_remote_address(m_remote_endpoint.address().to_string() + ":" + std::to_string(m_remote_endpoint.port()));
+
     // 接收数据
     do_read();
 }
@@ -180,6 +183,9 @@ void TcpTransport::handle_connect(const boost::system::error_code& err) {
 
         m_local_endpoint  = m_socket.local_endpoint();
         m_remote_endpoint = m_socket.remote_endpoint();
+
+        set_local_address(m_local_endpoint.address().to_string() + ":" + std::to_string(m_local_endpoint.port()));
+        set_remote_address(m_remote_endpoint.address().to_string() + ":" + std::to_string(m_remote_endpoint.port()));
 
         if (!set_option_err) {
             m_transport_status = transport::EN_OK;

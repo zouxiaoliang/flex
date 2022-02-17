@@ -183,11 +183,17 @@ public:
         }
     }
 
+    const std::string& get_local_address() const;
+    void               set_local_address(const std::string& new_local_address);
+
+    const std::string& get_remote_address() const;
+    void               set_remote_address(const std::string& new_remote_address);
+
 protected:
     /// @brief 上下文
     boost::asio::io_context::strand m_strand;
 
-    /// @brief 超市时间
+    /// @brief 超时时间
     time_t m_timeout;
     /// @brief 数据块大小
     size_t m_block_size;
@@ -206,6 +212,9 @@ protected:
     transport::on_connection_failed m_fn_handle_connection_failed;
     transport::on_accept_failed     m_fn_handle_accept_failed;
     transport::on_accept            m_fn_handle_accept;
+
+    std::string m_local_address;
+    std::string m_remote_address;
 };
 
 #endif // BASETRANSPORT_H
