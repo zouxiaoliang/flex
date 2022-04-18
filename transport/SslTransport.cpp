@@ -259,7 +259,7 @@ void SslTransport::handle_handshake(const boost::system::error_code& err) {
 
 void SslTransport::handle_read(const boost::system::error_code& err, size_t length) {
     if (!err) {
-        std::cout << "handle read: " << length << std::endl;
+        // std::cout << "handle read: " << length << std::endl;
 
         // 处理接收的数据
         if (m_fn_handle_data_recevied) {
@@ -269,7 +269,7 @@ void SslTransport::handle_read(const boost::system::error_code& err, size_t leng
         // 接收数据
         do_read();
     } else {
-        std::cout << "handle_read error, message: " << err.message() << std::endl;
+        std::cerr << "handle_read error, message: " << err.message() << std::endl;
         handle_close();
 
         if (m_fn_handle_connection_lost) {
