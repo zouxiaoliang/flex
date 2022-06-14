@@ -87,7 +87,7 @@ protected:
     std::string m_buffer;
 
     /// @brief 定时器
-    boost::asio::deadline_timer m_timer;
+    boost::asio::steady_timer m_timer;
 };
 
 #endif // GENERICPROTOCOL_H

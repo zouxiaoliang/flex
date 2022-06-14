@@ -72,7 +72,7 @@ protected:
     ON_CONNECTION_FAILED m_fn_connection_failed;
 
     time_t m_reconnection_cycle{5};
-    boost::asio::deadline_timer m_delay_connect;
+    boost::asio::steady_timer m_delay_connect;
 };
 
 #endif // AUTOCONNECTOR_H

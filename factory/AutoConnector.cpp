@@ -1,6 +1,10 @@
 #include "AutoConnector.h"
 
-AutoReconnector::AutoReconnector(boost::shared_ptr<boost::asio::io_context> ioc, time_t reconnection_cycle) : Connector(ioc), m_reconnection_cycle(reconnection_cycle), m_delay_connect(*ioc) {}
+AutoReconnector::AutoReconnector(boost::shared_ptr<boost::asio::io_context> ioc,
+                                 time_t reconnection_cycle)
+    : Connector(ioc),
+      m_reconnection_cycle(reconnection_cycle),
+      m_delay_connect(*ioc, boost::asio::chrono::seconds(reconnection_cycle)) {}
 
 AutoReconnector::~AutoReconnector() {}
 
@@ -25,7 +29,7 @@ void AutoReconnector::connection_lost(
     const boost::system::error_code& err) {
     if (err) {
         std::cout << "connection lost, wait " << m_reconnection_cycle << "s retry connect to server, latest error: " << err.message() << std::endl;
-        m_delay_connect.expires_from_now(boost::posix_time::seconds(m_reconnection_cycle));
+        m_delay_connect.expires_after(boost::asio::chrono::seconds(m_reconnection_cycle));
         m_delay_connect.async_wait(boost::bind(&AutoReconnector::reconnection, this, connector));
     }
 }
@@ -35,7 +39,7 @@ void AutoReconnector::connection_failed(
     const boost::system::error_code& err) {
     if (err) {
         std::cout << "connection failed, wait " << m_reconnection_cycle << "s retry connect to server, latest error: " << err.message() << std::endl;
-        m_delay_connect.expires_from_now(boost::posix_time::seconds(m_reconnection_cycle));
+        m_delay_connect.expires_after(boost::asio::chrono::seconds(m_reconnection_cycle));
         m_delay_connect.async_wait(boost::bind(&AutoReconnector::reconnection, this, connector));
     }
 }

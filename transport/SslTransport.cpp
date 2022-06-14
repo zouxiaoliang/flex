@@ -348,6 +348,10 @@ void SslTransport::handle_accept(const boost::system::error_code& err) {
 }
 
 void SslTransport::handle_close() {
+    if (transport::EN_CLOSE == m_transport_status) {
+        return;
+    }
+
     m_transport_status = transport::EN_CLOSE;
     m_ssl_socket->lowest_layer().close();
     std::cout << "close_socket" << std::endl;

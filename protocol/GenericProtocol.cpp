@@ -11,9 +11,8 @@ using namespace boost::placeholders;
 
 GenericProtocol::GenericProtocol(boost::shared_ptr<boost::asio::io_context> ioc, boost::shared_ptr<BaseTransport> transport):
     BaseProtocol(ioc, transport),
-    m_timer(*ioc)
+    m_timer(*ioc, boost::asio::chrono::seconds(5))
 {
-    m_timer.expires_from_now(boost::posix_time::seconds(5));
     m_timer.async_wait(boost::bind(&GenericProtocol::print, this));
     m_buffer.reserve(100 * 1024);
 }
@@ -125,6 +124,6 @@ void GenericProtocol::print()
 
 //    m_flow_statistics.clear();
 
-    m_timer.expires_from_now(boost::posix_time::seconds(5));
+    m_timer.expires_at(m_timer.expiry() + boost::asio::chrono::seconds(5));
     m_timer.async_wait(boost::bind(&GenericProtocol::print, this));
 }

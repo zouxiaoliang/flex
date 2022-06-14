@@ -25,7 +25,7 @@ public:
     netlink(int proto) : m_proto(proto) {}
 
     int type() const BOOST_ASIO_NOEXCEPT {
-        return SOCK_RAW;
+        return SOCK_RAW | SOCK_CLOEXEC;
     }
 
     int protocol() const BOOST_ASIO_NOEXCEPT {
