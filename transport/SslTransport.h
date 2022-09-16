@@ -1,38 +1,31 @@
-#ifndef TCPTRANSPORT_H
-#define TCPTRANSPORT_H
-
-#include <boost/asio.hpp>
-#include <boost/function.hpp>
-#include <boost/atomic.hpp>
-#include <boost/enable_shared_from_this.hpp>
+#ifndef SSLTRANSPORT_H
+#define SSLTRANSPORT_H
 
 #include "BaseTransport.h"
+#include <boost/asio.hpp>
+#include <boost/asio/ssl.hpp>
+#include <boost/container/list.hpp>
+#include <boost/enable_shared_from_this.hpp>
 
-#include <list>
 #include <memory>
 
-class TcpTransport;
+class SslTransport;
+static auto default_handshake_check = [](const std::string&) -> bool { return true; };
 
-class TcpTransport : public boost::enable_shared_from_this<TcpTransport>,
-                     public BaseTransport
-{
+class SslTransport : public boost::enable_shared_from_this<SslTransport>, public BaseTransport {
 public:
-    struct Message
-    {
-        std::string *data;
+    struct Message {
+        std::string*               data;
         transport::on_write_failed on;
     };
 
-    struct FlowStatistics
-    {
-        struct ValueType
-        {
+    struct FlowStatistics {
+        struct ValueType {
             uint64_t count;
             uint64_t bytes;
         };
 
-        enum FlowType
-        {
+        enum FlowType {
             IN,
             OUT,
             ERR,
@@ -42,55 +35,48 @@ public:
 
         ValueType flow[FlowType::Max];
 
-        void increase(FlowType t, uint64_t var)
-        {
+        void increase(FlowType t, uint64_t var) {
             flow[t].count += 1;
             flow[t].bytes += var;
         }
 
-        bool empty()
-        {
-            for (const auto &v : flow)
-            {
-                if (0 != v.count || 0 != v.bytes)
-                {
+        bool empty() {
+            for (const auto& v : flow) {
+                if (0 != v.count || 0 != v.bytes) {
                     return false;
                 }
             }
             return true;
         }
 
-        void clear()
-        {
+        void clear() {
             memset(this, 0x0, sizeof(*this));
         }
     };
 
-    enum
-    {
-        EN_LOCAL_ENDPOINT,
-        EN_REMOTE_ENDPOINT
-    };
+    enum { EN_LOCAL_ENDPOINT, EN_REMOTE_ENDPOINT };
 
 public:
-    TcpTransport(boost::shared_ptr<boost::asio::io_context> ioc, time_t timeout, size_t block_size);
+    SslTransport(
+        boost::shared_ptr<boost::asio::io_context> ioc, time_t timeout, size_t block_size, boost::asio::ssl::context::method method = boost::asio::ssl::context::sslv3,
+        boost::function<bool(const std::string&)> handshake_check = default_handshake_check, const std::string& certificate_chain_file = "cert.pem", const std::string& private_file = "private.pem",
+        const std::string& password = "", const std::string& tmp_dh_file = "");
 
-    virtual ~TcpTransport();
-
+    ~SslTransport();
 
     /**
-     * @brief start 启动通讯管道
-     * @param m_resolver
+     * @brief connect
+     * @param path
      */
     void connect(const std::string& path) override;
 
     /**
-     * @brief Transport::connect
+     * @brief connect
      */
     void connect() override;
 
     /**
-     * @brief stop 关闭通讯管道
+     * @brief disconnect
      */
     void disconnect() override;
 
@@ -101,27 +87,16 @@ public:
     void accept(const std::string& path, boost::function<void(boost::shared_ptr<BaseTransport>)> on_accept) override;
 
     /**
-     * @brief status 设置当前transport的状态
-     * @param status
+     * @brief connection_mode
      */
-    void status(int32_t status);
+    void connection_mode() override;
 
     /**
-     * @brief status 当前transport的状态
-     * @return
+     * @brief write
+     * @param data
+     * @param handle_error
      */
-    int32_t status() override;
-
-    /**
-     * @brief connection_made
-     */
-    void connection_made();
-
-    /**
-     * @brief write 数据写入接口，针对特定的消息如果发送失败需要特殊处理，则使用该接口
-     * @brief handle_error 数据写入失败的处理函数
-     */
-    void write(const std::string &data, const transport::on_write_failed &handle_error = {}) override;
+    void write(const std::string& data, const transport::on_write_failed& handle_error = {}) override;
 
     /**
      * @brief flush
@@ -129,17 +104,34 @@ public:
     void flush() override;
 
     /**
+     * @brief verify_certificate
+     * @param preverified
+     * @param ctx
+     * @return
+     */
+    bool verify_certificate(bool preverified, boost::asio::ssl::verify_context& ctx);
+
+    /**
      * @brief endpoint 获取连接地址信息
      * @return
      */
     boost::asio::ip::tcp::endpoint endpoint(int32_t type = EN_LOCAL_ENDPOINT);
-protected:
 
+protected:
+    std::string password() {
+        return m_password;
+    }
     /**
      * @brief handle_connect 连接处理时间
      * @param err 错误信息
      */
     void handle_connect(const boost::system::error_code& err);
+
+    /**
+     * @brief handle_handshake 处理ssl的握手过程
+     * @param err
+     */
+    void handle_handshake(const boost::system::error_code& err);
 
     /**
      * @brief handle_read 读事件
@@ -180,15 +172,15 @@ protected:
      * @brief do_accept
      * @param transport
      */
-    void do_accept(boost::shared_ptr<TcpTransport> transport);
+    void do_accept(boost::shared_ptr<SslTransport> transport);
 
-    /**
-     * @brief check_deadline
-     */
-    void check_deadline();
+private:
+    boost::asio::ssl::context::method           m_method;
+    boost::asio::ssl::context                   m_ssl_context;
+    typedef boost::asio::ip::tcp::socket        TcpSocket;
+    typedef boost::asio::ssl::stream<TcpSocket> SSLSocket;
 
-protected:
-    boost::asio::ip::tcp::socket                 m_socket;
+    boost::shared_ptr<SSLSocket>                 m_ssl_socket;
     boost::asio::ip::tcp::resolver               m_resolver;
     boost::asio::ip::tcp::resolver::results_type m_endpoints;
     boost::asio::ip::tcp::endpoint               m_local_endpoint;
@@ -196,6 +188,14 @@ protected:
 
     boost::shared_ptr<boost::asio::io_context>        m_ioc{nullptr};
     boost::shared_ptr<boost::asio::ip::tcp::acceptor> m_acceptor{nullptr};
+
+    int m_ssl_verify_mode = {boost::asio::ssl::verify_none};
+    boost::function<bool(const std::string&)> m_fn_handshake_check;
+
+    std::string m_certificate_chain_file;
+    std::string m_private_file;
+    std::string m_password;
+    std::string m_tmp_dh_file;
 
     char*  m_read_data{nullptr};
     size_t m_read_data_length{0};
@@ -209,7 +209,8 @@ protected:
      * @brief m_messages
      */
     // std::SGIList<std::string*> m_messages;
-    std::list<Message> m_messages;
+    // 使用boost::constainer::list 避免sgi版本的list::size函数出现的遍历计算长度的问题
+    boost::container::list<Message> m_messages;
 
     /**
      * @brief m_flow_statistics
@@ -217,4 +218,4 @@ protected:
     FlowStatistics m_flow_statistics;
 };
 
-#endif // TCPTRANSPORT_H
+#endif // SSLTRANSPORT_H

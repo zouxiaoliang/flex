@@ -1,10 +1,11 @@
-cmake_minimum_required(VERSION 2.8)
+cmake_minimum_required(VERSION 2.8.12)
 
-project(flexible-network)
+project(flex-cmake LANGUAGES CXX C)
 
 set(CMAKE_CXX_STANDARD 11)
 
 option(debug "build debug version" ON)
+option(build_test "build test projects" ON)
 
 if (UNIX)
     set(CMAKE_C_FLAGS "-fPIC -Wall -pthread")
@@ -18,47 +19,62 @@ endif()
 
 message(STATUS "${PROJECT_NAME} cmake_cxx_flags: ${CMAKE_CXX_FLAGS}")
 
-if (CMAKE_SYSTEM_NAME MATCHES "Linux")
-    INCLUDE_DIRECTORIES(/usr/local/include)
-    LINK_LIBRARIES(/usr/local/lib)
+function(flexMain)
+
+    if (NOT HAS_THIRDPARTY_BOOST)
+        message(FATAL_ERROR "you need import 'boost-cmake' project from github, cmd `git clone xxx`")
+    endif()
+
+    set (FACTORY
+        "factory/Connector.cpp"
+        "factory/AutoConnector.cpp"
+        )
+    set (PROTOCOL
+        "protocol/BaseProtocol.cpp"
+        "protocol/GenericProtocol.cpp"
+        )
+    set (TRANSPORT
+        "transport/BaseTransport.cpp"
+        "transport/TcpTransport.cpp"
+        "transport/Strategy.cpp"
+        "transport/SslTransport.cpp"
+        )
+    set(LISTENER "listener/Listener.cpp")
+
+    if (UNIX)
+        set (TRANSPORT ${TRANSPORT} "transport/UnixSocketTransport.cpp")
+        if (CMAKE_SYSTEM_NAME MATCHES "Linux")
+            set (TRANSPORT ${TRANSPORT} "transport/NetlinkTransport.cpp")
+        endif()
+    endif()
+
+    add_library(thirdparty_libflex INTERFACE)
+    add_library(thirdparty_libflex_static ${TRANSPORT} ${PROTOCOL} ${FACTORY} ${LISTENER})
+
+    if (UNIX)
+        if (APPLE)
+            target_link_libraries(thirdparty_libflex_static thirdparty_boost pthread)
+        else (APPLE)
+            target_link_libraries(thirdparty_libflex_static thirdparty_boost pthread rt)
+        endif(APPLE)
+    endif(UNIX)
+    target_include_directories(thirdparty_libflex_static PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+    target_link_libraries(thirdparty_libflex_static thirdparty_boost)
+
+    target_link_libraries(thirdparty_libflex INTERFACE thirdparty_libflex_static)
+    target_include_directories(thirdparty_libflex SYSTEM INTERFACE ${CMAKE_CURRENT_SOURCE_DIR})
+
+endfunction()
+
+function(testMain)
+    add_executable(flex-test main.cpp)
+    target_link_libraries(flex-test thirdparty_libflex thirdparty_boost)
+    if (CMAKE_SYSTEM_NAME MATCHES "Linux")
+        target_link_libraries(flex-test libunwind.a libc++abi.a dl rt)
+    endif()
+endfunction()
+
+flexMain()
+if (build_test)
+    testMain()
 endif()
-
-INCLUDE_DIRECTORIES(.)
-
-if(CMAKE_SYSTEM_NAME MATCHES "Windows")
-    find_package(Boost COMPONENTS system filesystem regex thread)
-    INCLUDE_DIRECTORIES(${Boost_INCLUDE_DIRS})
-else()
-    find_package(Boost 1.67 COMPONENTS system filesystem regex thread)
-endif()
-
-set (TRANSPORT "transport/BaseTransport.cpp" "transport/TcpTransport.cpp")
-if (UNIX)
-    set (TRANSPORT ${TRANSPORT} "transport/UnixSocketTransport.cpp")
-endif()
-
-#aux_source_directory(transport TRANSPORT)
-aux_source_directory(protocol PROTOCOL)
-aux_source_directory(factory FACTORY)
-aux_source_directory(listener LISTENER)
-
-add_library(${PROJECT_NAME}-shared SHARED ${TRANSPORT} ${PROTOCOL} ${FACTORY} ${LISTENER})
-
-set_target_properties(${PROJECT_NAME}-shared PROPERTIES OUTPUT_NAME ${PROJECT_NAME})
-
-if (UNIX)
-    if (APPLE)
-        target_link_libraries(${PROJECT_NAME}-shared ${Boost_LIBRARIES} pthread)
-    else (APPLE)
-        target_link_libraries(${PROJECT_NAME}-shared ${Boost_LIBRARIES} pthread rt)
-    endif(APPLE)
-else()
-    target_link_libraries(${PROJECT_NAME}-shared ${Boost_LIBRARIES})
-endif(UNIX)
-
-add_executable(${PROJECT_NAME}-client "main.cpp")
-target_link_libraries(${PROJECT_NAME}-client ${PROJECT_NAME}-shared)
-
-SET(LIBRARY_OUTPUT_PATH lib)
-install(TARGETS ${PROJECT_NAME}-shared LIBRARY DESTINATION lib)
-install(TARGETS ${PROJECT_NAME}-client RUNTIME DESTINATION .)

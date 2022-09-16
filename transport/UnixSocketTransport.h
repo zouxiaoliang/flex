@@ -1,38 +1,13 @@
 #ifndef UNIXSOCKETTRANSPORT_H
 #define UNIXSOCKETTRANSPORT_H
 
+#include "BaseTransport.h"
 #include <boost/asio.hpp>
+#include <boost/asio/local/stream_protocol.hpp>
 #include <boost/enable_shared_from_this.hpp>
 
-#include "BaseTransport.h"
-
-#include "utils/KeyVariant.h"
-#include "utils/sgi_plus.h"
-
-class UnixSocketTransport;
-
-namespace unix_socket {
-
-/**
- * @brief CallBack 可变类型回调函数
- */
-typedef boost::function<void ()> on_connected;
-typedef boost::function<void ()> on_disconnected;
-typedef boost::function<void(const std::string &)> on_data_recevied;
-typedef boost::function<void(boost::shared_ptr<UnixSocketTransport>, const boost::system::error_code&)> on_connection_lost;
-typedef boost::function<void(boost::shared_ptr<UnixSocketTransport>, const boost::system::error_code&)> on_connection_failed;
-
-typedef KeyVariant<
-    boost::function<void()>,
-    boost::function<void(const std::string &)>,
-    boost::function<void(boost::shared_ptr<UnixSocketTransport>, const boost::system::error_code&)>
-> TOnEvent;
-
-}
-
 class UnixSocketTransport : public boost::enable_shared_from_this<UnixSocketTransport>,
-        public BaseTransport<boost::asio::local::stream_protocol::socket, unix_socket::TOnEvent>
-{
+                            public BaseTransport {
 public:
     /**
      * @brief UnixSocketTransport
@@ -45,6 +20,42 @@ public:
      * @brief ~UnixSocketTransport
      */
     virtual ~UnixSocketTransport();
+
+    /**
+     * @brief connect
+     * @param path
+     */
+    void connect(const std::string &path) override;
+
+    /**
+     * @brief connect
+     */
+    void connect() override;
+
+    /**
+     * @brief disconnect
+     */
+    void disconnect() override;
+
+    /**
+     * @brief status
+     * @return
+     */
+    int32_t status() override;
+
+    /**
+     * @brief connection_mode
+     */
+    void connection_mode() override;
+
+    /**
+     * @brief flush
+     */
+    void flush() override;
+
+protected:
+    boost::asio::local::stream_protocol::socket   m_unix_socket;
+    boost::asio::local::stream_protocol::endpoint m_endpoint;
 };
 
 #endif // UNIXSOCKETTRANSPORT_H
